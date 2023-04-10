@@ -14,10 +14,19 @@ func (c *Connection) Connect() {
 	c.newClientSet()
 }
 
+func (c *Connection) newClientSet() {
+	cs, err := kubernetes.NewForConfig(c.Config)
+	if err != nil {
+		log.Println(err)
+		log.Fatalln("Failed to create Kubernetes Client Set")
+	}
+	c.ClientSet = cs
+}
+
 func (c *Connection) establish() {
 	// Establish Connection precedence
 	// #1 URL
-	// #2 config File
+	// #2 Config File
 	// #3 Local Connection
 	var cfg *rest.Config
 	var err error
@@ -34,17 +43,8 @@ func (c *Connection) establish() {
 		log.Fatalln("Failed to establish Connection to Kubernetes API")
 	} else {
 		c.Established = true
-		c.config = cfg
+		c.Config = cfg
 	}
-}
-
-func (c *Connection) newClientSet() {
-	cs, err := kubernetes.NewForConfig(c.config)
-	if err != nil {
-		log.Println(err)
-		log.Fatalln("Failed to create Kubernetes Client Set")
-	}
-	c.ClientSet = cs
 }
 
 func (c *Connection) establishUrl() (*rest.Config, error) {
@@ -66,7 +66,7 @@ func (c *Connection) establishConfig() (*rest.Config, error) {
 	if c.ConfigFile.Path != "" {
 		configPath = c.ConfigFile.Path
 	} else {
-		configPath = filepath.Join(home, ".kube", "config")
+		configPath = filepath.Join(home, ".kube", "Config")
 	}
 	// TODO: pass context override
 	config, err := clientcmd.BuildConfigFromFlags("", configPath)
