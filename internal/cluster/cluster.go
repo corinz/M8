@@ -5,16 +5,17 @@ import (
 	discovery "m8/internal/discovery"
 )
 
-type cluster struct {
+// TODO: dont export this struct
+type Cluster struct {
 	connect.Connection
 	*discovery.Discovery
 }
 
-func NewCluster(apiUrl string, configContext string, configPath string) *cluster {
+func NewCluster(apiUrl string, configContext string, configPath string) *Cluster {
 	c := connect.NewConnection(apiUrl, configContext, configPath)
 	d := discovery.NewDiscovery(c)
 
-	return &cluster{
+	return &Cluster{
 		Connection: c,
 		Discovery:  d,
 	}

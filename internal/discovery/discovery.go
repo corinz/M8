@@ -58,6 +58,18 @@ func NewDiscovery(c connect.Connection) *Discovery {
 //	}
 //}
 
+// TODO finish this
+func (d Discovery) PrintApiResourceByName(name string) string {
+	for _, rlist := range d.resources {
+		for _, r := range rlist.APIResources {
+			if r.Name == name {
+				return name
+			}
+		}
+	}
+	return ""
+}
+
 func (d Discovery) PrintApiResource(r v1.APIResource) {
 	if !strings.Contains(r.Name, "/") {
 		fmt.Fprintf(d.writer, "%s\t%s\n", r.Name, r.Kind)
