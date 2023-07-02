@@ -26,19 +26,20 @@ func NewApp() *App {
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
+	var err error
 	a.ctx = ctx
 	configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
 	configContext := flag.String("configContext", "", "Kube config context name")
 	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
 
-	cluster := cluster.NewCluster(*apiUrl, *configContext, *configPath)
-	cluster.PrintApiGroups()
+	c := cluster.NewCluster(*apiUrl, *configContext, *configPath)
+	c.PrintApiGroups()
 
-	schema, err := api.BuildSchema(cluster)
+	schema, err := api.BuildSchema(c)
 	if err != nil {
 		log.Fatal(err)
 	}
-	h := handler.New(&handler.Config{
+	graphqlHandler := handler.New(&handler.Config{
 		Schema:   &schema,
 		Pretty:   true,
 		GraphiQL: false,
@@ -50,12 +51,13 @@ func (a *App) startup(ctx context.Context) {
 			return gqlErr
 		},
 	})
-	http.Handle("/graphql", h)
 
-	h2 := cors.Default().Handler(h)
-	err2 := http.ListenAndServe(":8080", h2)
-	if err2 != nil {
-		println("Error:", err2.Error())
+	// TODO: the default policy is very open
+	graphqlHandlerWithCors := cors.Default().Handler(graphqlHandler)
+	http.Handle("/graphql", graphqlHandlerWithCors)
+	err = http.ListenAndServe(":8080", graphqlHandlerWithCors)
+	if err != nil {
+		println("Error:", err.Error())
 	}
 }
 
