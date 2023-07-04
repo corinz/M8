@@ -1,31 +1,29 @@
 <script lang="ts">
-  import logo from './assets/images/logo-universal.png'
-  import {Greet} from '../wailsjs/go/main/App.js'
+  import {GetApiResources} from '../wailsjs/go/main/App.js'
   import JsonTable from './JsonTable.svelte'
+  import {v1} from "../wailsjs/go/models";
 
-  let resultText: string = "Please enter your name below 👇"
   let name: string
+  let resultObject: v1.APIResource
+  let api: string
 
-  function greet(): void {
-    Greet(name).then(result => resultText = result)
-  }
-
-  let jsonData = {
-    column1: 'Value 1',
-    column2: 'Value 2',
-    column3: 'Value 3',
+  function getApi(): void {
+    GetApiResources(api).then(result => resultObject = result)
   }
 </script>
 
-
 <main>
-<!--  <img alt="Wails logo" id="logo" src="{logo}">-->
-<!--  <div class="result" id="result">{resultText}</div>-->
-<!--  <div class="input-box" id="input">-->
-<!--    <input autocomplete="off" bind:value={name} class="input" id="name" type="text"/>-->
-<!--    <button class="btn" on:click={greet}>Greet</button>-->
-<!--  </div>-->
-  <JsonTable data={jsonData} />
+  <div class="input-box" id="apiInput">
+    <input autocomplete="off" bind:value={api} class="input" id="api" type="text"/>
+    <button class="btn" on:click={getApi}>Get API</button>
+  </div>
+
+<!--  TODO how does this get resolved when there is a delay in retrieving data? -->
+  {#if resultObject != null}
+    <JsonTable data={resultObject} />
+  {:else}
+    <p>No data to show yet.</p>
+  {/if}
 </main>
 
 <style>
@@ -61,7 +59,7 @@
 
   .input-box .btn:hover {
     background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-    color: #333333;
+    color: #ffffff;
   }
 
   .input-box .input {

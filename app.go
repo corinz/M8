@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
 	"github.com/rs/cors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"m8/internal/api"
 	"m8/internal/cluster"
@@ -15,7 +15,8 @@ import (
 
 // App struct
 type App struct {
-	ctx context.Context
+	ctx     context.Context
+	cluster *cluster.Cluster
 }
 
 // NewApp creates a new App application struct
@@ -32,10 +33,10 @@ func (a *App) startup(ctx context.Context) {
 	configContext := flag.String("configContext", "", "Kube config context name")
 	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
 
-	c := cluster.NewCluster(*apiUrl, *configContext, *configPath)
-	c.PrintApiGroups()
+	a.cluster = cluster.NewCluster(*apiUrl, *configContext, *configPath)
+	a.cluster.PrintApiGroups()
 
-	schema, err := api.BuildSchema(c)
+	schema, err := api.BuildSchema(a.cluster)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,7 +62,8 @@ func (a *App) startup(ctx context.Context) {
 	}
 }
 
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+func (a *App) GetApiResources(name string) v1.APIResource {
+	// experimenting with async and delays on f/e
+	// time.Sleep(5 * time.Second)
+	return a.cluster.PrintApiResourceByName(name)
 }

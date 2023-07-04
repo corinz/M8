@@ -9,13 +9,13 @@
     }
 
     th, td {
-        border: 1px solid #ddd;
+        border: 1px solid #7038e1;
         padding: 8px;
         text-align: left;
     }
 
     th {
-        background-color: #f2f2f2;
+        background-color: #dc0f0f;
     }
 </style>
 
