@@ -59,7 +59,7 @@ func NewDiscovery(c connect.Connection) *Discovery {
 //}
 
 // TODO: better way to look up? hash table?
-func (d Discovery) PrintApiResourceByName(name string) v1.APIResource {
+func (d Discovery) GetApiResourceByName(name string) v1.APIResource {
 	api := v1.APIResource{}
 	for _, rlist := range d.Resources {
 		for _, r := range rlist.APIResources {
@@ -69,6 +69,16 @@ func (d Discovery) PrintApiResourceByName(name string) v1.APIResource {
 		}
 	}
 	return api
+}
+
+func (d Discovery) GetApiResources() []v1.APIResource {
+	var apiResources []v1.APIResource
+	for _, resourcesByGroup := range d.Resources {
+		for _, resource := range resourcesByGroup.APIResources {
+			apiResources = append(apiResources, resource)
+		}
+	}
+	return apiResources
 }
 
 func (d Discovery) PrintApiResource(r v1.APIResource) {

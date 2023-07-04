@@ -57,7 +57,7 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					name, _ := p.Args["name"].(string)
 					// TODO type check second return val
-					return c.PrintApiResourceByName(name), nil
+					return c.GetApiResourceByName(name), nil
 				},
 			},
 			"apiResources": &graphql.Field{

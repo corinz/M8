@@ -62,8 +62,14 @@ func (a *App) startup(ctx context.Context) {
 	}
 }
 
-func (a *App) GetApiResources(name string) v1.APIResource {
+func (a *App) AppGetApiResourcesByName(name string) v1.APIResource {
 	// experimenting with async and delays on f/e
 	// time.Sleep(5 * time.Second)
-	return a.cluster.PrintApiResourceByName(name)
+	return a.cluster.GetApiResourceByName(name)
+}
+
+func (a *App) AppGetApiResources() []v1.APIResource {
+	// experimenting with async and delays on f/e
+	// time.Sleep(5 * time.Second)
+	return a.cluster.GetApiResources()
 }
