@@ -1,17 +1,11 @@
 <script lang="ts">
-    import DataTable, {
-        Head,
-        Body,
-        Row,
-        Cell,
-        Label,
-        SortValue,
-    } from '@smui/data-table';
     import IconButton from '@smui/icon-button';
+    import DataTable, {Body, Cell, Head, Label, Row, SortValue,} from '@smui/data-table';
 
     export let data;
-    let sortedData
 
+    let activeRowIndex = 0;
+    let highlightRow, sortedData;
     $: sortedData = data;
     let sortDirection: Lowercase<keyof typeof SortValue> = 'ascending';
     let sort = 'id';
@@ -29,24 +23,38 @@
         });
         sortedData = sortedData;
     }
+
+    function handleKeyDown(event: CustomEvent | KeyboardEvent) {
+        event = event as KeyboardEvent;
+        if (event.key === 'ArrowUp' || event.key === 'Up') {
+            activeRowIndex = Math.max(0, activeRowIndex - 1);
+        } else if (event.key === 'ArrowDown' || event.key === 'Down') {
+            activeRowIndex = Math.min(data.length - 1, activeRowIndex + 1);
+        }
+    }
+
+    $: if (highlightRow) {
+        const firstTableRow = document.getElementById('focus');
+        firstTableRow.focus();
+    }
 </script>
 
 {#if data.length > 0}
-        <DataTable
-                stickyHeader
-                sortable
-                bind:sort
-                bind:sortDirection
-                on:SMUIDataTable:sorted={handleSort}
-                table$aria-label="Multi-Result Table"
-                style="width: 100%;"
-        >
+    <DataTable
+            stickyHeader
+            sortable
+            bind:sort
+            bind:sortDirection
+            on:keydown={handleKeyDown}
+            on:SMUIDataTable:sorted={handleSort}
+            table$aria-label="Multi-Result Table"
+            style="width: 100%;"
+    >
         <Head>
             <Row>
                 <Cell columnId="name" style="width: 100%;">
                     <Label>Name</Label>
-                    <!-- For non-numeric columns, icon comes second. -->
-                    <IconButton class="material-icons">arrow_upward</IconButton>
+                    <IconButton id="focus" class="material-icons">arrow_upward</IconButton>
                 </Cell>
                 <Cell columnId="singularName">
                     <Label>Singular Name</Label>
@@ -75,21 +83,41 @@
             </Row>
         </Head>
         <Body>
-        {#each Object.entries(sortedData) as [id, {name, singularName, namespaced, kind, verbs, shortNames, categories}]}
-            <Row>
-                <Cell>{name}</Cell>
-                <Cell>{singularName}</Cell>
-                <Cell>{namespaced}</Cell>
-                <Cell>{kind}</Cell>
-                <Cell>{verbs}</Cell>
-                <Cell>{shortNames}</Cell>
-                <Cell>{categories}</Cell>
-            </Row>
+        {#each Object.entries(sortedData) as [id, {
+            name,
+            singularName,
+            namespaced,
+            kind,
+            verbs,
+            shortNames,
+            categories
+        }]}
+            {#if id == activeRowIndex}
+                    <Row bind:this={highlightRow}>
+                        <Cell class="highlight">{name}</Cell>
+                        <Cell class="highlight">{singularName}</Cell>
+                        <Cell class="highlight">{namespaced}</Cell>
+                        <Cell class="highlight">{kind}</Cell>
+                        <Cell class="highlight">{verbs}</Cell>
+                        <Cell class="highlight">{shortNames}</Cell>
+                        <Cell class="highlight">{categories}</Cell>
+                    </Row>
+            {:else }
+                <Row>
+                    <Cell>{name}</Cell>
+                    <Cell>{singularName}</Cell>
+                    <Cell>{namespaced}</Cell>
+                    <Cell>{kind}</Cell>
+                    <Cell>{verbs}</Cell>
+                    <Cell>{shortNames}</Cell>
+                    <Cell>{categories}</Cell>
+                </Row>
+            {/if}
         {/each}
         </Body>
     </DataTable>
 {:else}
-    <DataTable stickyHeader table$aria-label="User List" style="width: 100%;">
+    <DataTable stickyHeader table$aria-label="List" style="width: 100%;">
         <Head>
             <Row>
                 <Cell>Name</Cell>
@@ -120,9 +148,8 @@
         position: static;
     }
 
-    :global(#smui-app) {
-        display: block;
-        height: auto;
-        overflow: auto;
+    :global(.highlight) {
+        background-color: rgba(109, 119, 131, 0.12);
     }
+
 </style>
