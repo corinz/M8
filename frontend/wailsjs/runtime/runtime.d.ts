@@ -40,7 +40,7 @@ export function EventsEmit(eventName: string, ...data: any): void;
 // [EventsOn](https://wails.io/docs/reference/runtime/events#eventson) sets up a listener for the given event name.
 export function EventsOn(
   eventName: string,
-  callback: (...data: any) => void
+  callback: (...data: any) => void,
 ): () => void;
 
 // [EventsOnMultiple](https://wails.io/docs/reference/runtime/events#eventsonmultiple)
@@ -48,14 +48,14 @@ export function EventsOn(
 export function EventsOnMultiple(
   eventName: string,
   callback: (...data: any) => void,
-  maxCallbacks: number
+  maxCallbacks: number,
 ): () => void;
 
 // [EventsOnce](https://wails.io/docs/reference/runtime/events#eventsonce)
 // sets up a listener for the given event name, but will only trigger once.
 export function EventsOnce(
   eventName: string,
-  callback: (...data: any) => void
+  callback: (...data: any) => void,
 ): () => void;
 
 // [EventsOff](https://wails.io/docs/reference/runtime/events#eventsoff)
@@ -217,7 +217,7 @@ export function WindowSetBackgroundColour(
   R: number,
   G: number,
   B: number,
-  A: number
+  A: number,
 ): void;
 
 // [ScreenGetAll](https://wails.io/docs/reference/runtime/window#screengetall)

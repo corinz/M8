@@ -12,10 +12,22 @@
 
 <script lang="ts">
     import SearchBar from "./SearchBar.svelte";
+    function handleKeyDown(event: CustomEvent | KeyboardEvent) {
+        event = event as KeyboardEvent;
+        // forward slash to focus on search
+        // preventDefault on '/' to ignore it from input box
+        if (event.key === '/'){
+            const search = document.getElementById('search')
+            event.preventDefault()
+            search.focus()
+        }
+    }
 </script>
 
 <main>
+    <div on:keydown={handleKeyDown}>
     <SearchBar/>
+    </div>
 </main>
 
 

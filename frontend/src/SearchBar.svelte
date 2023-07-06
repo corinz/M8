@@ -47,11 +47,13 @@
     <Paper class="solo-paper" elevation={6}>
         <Icon class="material-icons">search</Icon>
         <Input
+                id="search"
                 bind:value
                 on:keydown={handleKeyDown}
                 on:input={debounce(search, 750)}
                 placeholder="Search"
                 class="solo-input"
+                type="text"
         />
     </Paper>
 </div>
