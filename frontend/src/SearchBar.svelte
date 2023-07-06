@@ -1,5 +1,3 @@
-<!--<pre class="status">Value: {value}</pre>-->
-
 <script lang="ts">
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';

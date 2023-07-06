@@ -34,8 +34,7 @@
     }
 
     $: if (highlightRow) {
-        const firstTableRow = document.getElementById('focus');
-        firstTableRow.focus();
+        document.getElementById('defaultFocus').focus();
     }
 </script>
 
@@ -54,7 +53,7 @@
             <Row>
                 <Cell columnId="name" style="width: 100%;">
                     <Label>Name</Label>
-                    <IconButton id="focus" class="material-icons">arrow_upward</IconButton>
+                    <IconButton id="defaultFocus" class="material-icons">arrow_upward</IconButton>
                 </Cell>
                 <Cell columnId="singularName">
                     <Label>Singular Name</Label>
@@ -93,15 +92,15 @@
             categories
         }]}
             {#if id == activeRowIndex}
-                    <Row bind:this={highlightRow}>
-                        <Cell class="highlight">{name}</Cell>
-                        <Cell class="highlight">{singularName}</Cell>
-                        <Cell class="highlight">{namespaced}</Cell>
-                        <Cell class="highlight">{kind}</Cell>
-                        <Cell class="highlight">{verbs}</Cell>
-                        <Cell class="highlight">{shortNames}</Cell>
-                        <Cell class="highlight">{categories}</Cell>
-                    </Row>
+                <Row id="highlight" bind:this={highlightRow}>
+                    <Cell class="highlight">{name}</Cell>
+                    <Cell class="highlight">{singularName}</Cell>
+                    <Cell class="highlight">{namespaced}</Cell>
+                    <Cell class="highlight">{kind}</Cell>
+                    <Cell class="highlight">{verbs}</Cell>
+                    <Cell class="highlight">{shortNames}</Cell>
+                    <Cell class="highlight">{categories}</Cell>
+                </Row>
             {:else }
                 <Row>
                     <Cell>{name}</Cell>
