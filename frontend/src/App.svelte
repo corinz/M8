@@ -12,19 +12,16 @@
 
 <script lang="ts">
     import SearchBar from "./SearchBar.svelte";
-
     document.body.style.cursor = 'none';
 
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
-        // forward slash to focus on search
-        // preventDefault on '/' to ignore it from input box
-        if (event.key === '/') {
+        // preventDefault to ignore it from input box
+        if ( event.key === '/' || event.key === ':' ) { // search bar focus
             const search = document.getElementById('search')
             event.preventDefault()
             search.focus()
-        } else if (event.key === "Escape") {
-            // TODO: returns focus back to table, but needs to scroll page
+        } else if ( event.key === "Escape" ) { // default focus
             const table = document.getElementById('defaultFocus');
             const highlightRow = document.getElementById('highlight')
             table.focus();
@@ -33,8 +30,8 @@
     }
 </script>
 
-<main class="nopointer">
-    <div on:keydown={handleKeyDown}>
+<main class="nopointer" on:keydown={handleKeyDown}>
+    <div>
         <SearchBar/>
     </div>
 </main>

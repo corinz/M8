@@ -43,13 +43,12 @@
 
 <div class="solo-demo-container solo-container">
     <Paper class="solo-paper" elevation={6}>
-        <Icon class="material-icons">search</Icon>
         <Input
                 id="search"
                 bind:value
                 on:keydown={handleKeyDown}
                 on:input={debounce(search, 750)}
-                placeholder="Search"
+                placeholder="Press : to search or / to filter"
                 class="solo-input"
                 type="text"
         />
