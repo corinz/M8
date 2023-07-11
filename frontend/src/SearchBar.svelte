@@ -17,7 +17,8 @@
     onMount(async () => tableObject = await AppGetApiResources().then(result => result))
 
     const filterOptions = {
-        keys: ['name']
+        keys: ['name'],
+        threshold: 0.40 // 0 = perfect match, 1 = indiscriminate
     }
 
     function debounce(func, delay) {
@@ -88,11 +89,13 @@
     {numResults} results
 </div>
 
+<div class="scroll">
 {#if filteredTableObject.length !== 0 }
     <JsonTable data={filteredTableObject}/>
 {:else}
     <JsonTable data={tableObject}/>
 {/if}
+</div>
 
 <style>
     .solo-demo-container {
@@ -134,5 +137,9 @@
 
     * :global(.solo-fab) {
         flex-shrink: 0;
+    }
+
+    .scroll {
+        overflow-x: auto;
     }
 </style>
