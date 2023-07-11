@@ -14,10 +14,13 @@
     import SearchBar from "./SearchBar.svelte";
     document.body.style.cursor = 'none';
 
+    let searchEventKey = ''
+
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
         // preventDefault to ignore it from input box
         if ( event.key === '/' || event.key === ':' ) { // search bar focus
+            searchEventKey = event.key
             const search = document.getElementById('search')
             event.preventDefault()
             search.focus()
@@ -32,7 +35,7 @@
 
 <main class="nopointer" on:keydown={handleKeyDown}>
     <div>
-        <SearchBar/>
+        <SearchBar searchEventKey={searchEventKey}/>
     </div>
 </main>
 

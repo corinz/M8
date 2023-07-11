@@ -37,8 +37,9 @@
         document.getElementById('defaultFocus').focus();
     }
 </script>
-
-{#if data.length > 0}
+{#if (!data)}
+    Loading...
+{:else if data.length > 0}
     <DataTable
             stickyHeader
             sortable
