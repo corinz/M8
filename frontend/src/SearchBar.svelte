@@ -71,7 +71,7 @@
     }
 </script>
 
-<div class="solo-demo-container solo-container">
+<div style="padding: 10px 0">
     <Paper class="solo-paper" elevation={6}>
         <Input
                 id="search"
@@ -82,11 +82,8 @@
                 class="solo-input"
                 type="text"
         />
+        {numResults}
     </Paper>
-</div>
-
-<div>
-    {numResults} results
 </div>
 
 <div class="scroll">
@@ -98,31 +95,19 @@
 </div>
 
 <style>
-    .solo-demo-container {
-        padding: 36px 18px;
-        background-color: var(--mdc-theme-background, #f8f8f8);
-        border: 1px solid var(--mdc-theme-text-hint-on-background, rgba(0, 0, 0, 0.1));
-    }
-
-    .solo-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
     * :global(.solo-paper) {
         display: flex;
         align-items: center;
         flex-grow: 1;
-        max-width: 600px;
-        margin: 0 12px;
+        max-width: 500px;
+        margin: 0 0px;
         padding: 0 12px;
-        height: 48px;
+        height: 36px;
     }
 
     * :global(.solo-paper > *) {
         display: inline-block;
-        margin: 0 12px;
+        margin: 0 6px;
     }
 
     * :global(.solo-input) {
