@@ -13,6 +13,7 @@
     let numResults: number = 0
     $: numResults = tableObject.length
     let filteredTableObject = []
+    let errorMessage: string = "";
 
     onMount(async () => tableObject = await AppGetApiResources().then(result => result))
 
@@ -32,14 +33,20 @@
     }
 
     function search(): void {
-        AppGetApiResourcesByName(searchBarInput).then(r => {
-            if (r.name == null || r.name == "") {
-                console.error("API Resources not found")
-            } else {
-                tableObject = [r]
-                numResults = tableObject.length
-            }
-        })
+        // Don't search blank input
+        if (searchBarInput !== "") {
+            AppGetApiResourcesByName(searchBarInput).then(r => {
+                if (r.name == null || r.name == "") {
+                    errorMessage = "Resource not found"
+                } else {
+                    tableObject = [r]
+                    numResults = tableObject.length
+                    errorMessage = ""
+                }
+            })
+        }
+        // Clear search bar value after search
+        searchBarInput = ""
     }
 
     function filter(): void {
@@ -63,10 +70,15 @@
         }
     }
 
+    // Handles "Enter" button when focused on search bar
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
         if (event.key === 'Enter') {
-            search();
+            if (searchEventKey === ':') {
+                search()
+            } else if (searchEventKey === '/') {
+                filter()
+            }
         }
     }
 </script>
@@ -84,6 +96,9 @@
         />
         {numResults}
     </Paper>
+    <div style="padding: 20px 0; color: red">
+    {errorMessage}
+    </div>
 </div>
 
 <div class="scroll">
@@ -103,6 +118,7 @@
         margin: 0 0px;
         padding: 0 12px;
         height: 36px;
+
     }
 
     * :global(.solo-paper > *) {
