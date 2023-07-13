@@ -9,7 +9,7 @@ run: requirements build-cluster
 	go fmt ./...
 	open http://localhost:8080/sandbox
 	echo "INFO: see Apollo Backend here: http://localhost:8080/sandbox"
-	go run main.go > /dev/null
+	go run app.go main.go -headless=true > /dev/null
 
 build:
 	CGO_ENABLED=0 GOOS=darwin go build -o bin/apigateway-darwin cmd/server/main.go

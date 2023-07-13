@@ -125,6 +125,8 @@
     }
 
     .scroll {
+        /*TODO: this setting enables horizontal scrolling for the table */
+        /*but disables the sticky header*/
         overflow-x: auto;
     }
 </style>

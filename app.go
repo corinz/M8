@@ -62,14 +62,69 @@ func (a *App) startup(ctx context.Context) {
 	}
 }
 
+// startup is called when from main() when -headless=true
+func headlessStartup() {
+	var err error
+	configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
+	configContext := flag.String("configContext", "", "Kube config context name")
+	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
+
+	cluster := cluster.NewCluster(*apiUrl, *configContext, *configPath)
+	cluster.PrintApiGroups()
+
+	schema, err := api.BuildSchema(cluster)
+	if err != nil {
+		log.Fatal(err)
+	}
+	graphqlHandler := handler.New(&handler.Config{
+		Schema:   &schema,
+		Pretty:   true,
+		GraphiQL: false,
+		FormatErrorFn: func(err error) gqlerrors.FormattedError {
+			gqlErr := gqlerrors.FormattedError{
+				Message: err.Error(),
+			}
+			log.Println("GraphQL Error: ", err)
+			return gqlErr
+		},
+	})
+
+	// TODO: the default policy is very open
+	graphqlHandlerWithCors := cors.Default().Handler(graphqlHandler)
+	http.Handle("/graphql", graphqlHandlerWithCors)
+
+	var sandboxHTML = []byte(`
+		<!DOCTYPE html>
+		<html lang="en">
+		<body style="margin: 0; overflow-x: hidden; overflow-y: hidden">
+		<div id="sandbox" style="height:100vh; width:100vw;"></div>
+		<script src="https://embeddable-sandbox.cdn.apollographql.com/_latest/embeddable-sandbox.umd.production.min.js"></script>
+		<script>
+		new window.EmbeddedSandbox({
+		  target: "#sandbox",
+		  // Pass through your server href if you are embedding on an endpoint.
+		  // Otherwise, you can pass whatever endpoint you want Sandbox to start up with here.
+		  initialEndpoint: "http://localhost:8080/graphql",
+		});
+		// advanced options: https://www.apollographql.com/docs/studio/explorer/sandbox#embedding-sandbox
+		</script>
+		</body>
+		</html>`)
+
+	http.Handle("/sandbox", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(sandboxHTML)
+	}))
+
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		println("Error:", err.Error())
+	}
+}
+
 func (a *App) AppGetApiResourcesByName(name string) v1.APIResource {
-	// experimenting with async and delays on f/e
-	// time.Sleep(5 * time.Second)
 	return a.cluster.GetApiResourceByName(name)
 }
 
 func (a *App) AppGetApiResources() []v1.APIResource {
-	// experimenting with async and delays on f/e
-	// time.Sleep(5 * time.Second)
 	return a.cluster.GetApiResources()
 }
