@@ -4,7 +4,12 @@ clean:
 	go clean
 	kind delete cluster
 
-run: requirements build-cluster
+run:
+	open http://localhost:8080/sandbox
+	echo "INFO: see Apollo Backend here: http://localhost:8080/sandbox"
+	go run app.go main.go -headless=true > /dev/null
+
+run-with-deps: requirements build-cluster
 	go mod tidy
 	go fmt ./...
 	open http://localhost:8080/sandbox
