@@ -5,7 +5,6 @@ clean:
 	kind delete cluster
 
 run:
-	open http://localhost:8080/sandbox
 	echo "INFO: see Apollo Backend here: http://localhost:8080/sandbox"
 	go run app.go main.go -headless=true > /dev/null
 

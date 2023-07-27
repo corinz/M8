@@ -37,7 +37,7 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 			},
 			"APIResources": &graphql.Field{
 				Type: graphql.NewList(apiResourceType),
-				Name: "API Resources",
+				Name: "API ResourcesPreferred",
 			},
 		},
 	})
@@ -62,11 +62,11 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 			},
 			"apiResources": &graphql.Field{
 				Type:        graphql.NewList(apiResourceType),
-				Description: "List of API Resources",
-				Name:        "API Resources",
+				Description: "List of API ResourcesPreferred",
+				Name:        "API ResourcesPreferred",
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					// TODO  unexport Resources
-					return c.Resources[0].APIResources, nil
+					// TODO  unexport ResourcesPreferred
+					return c.ResourcesPreferred[0].APIResources, nil
 				},
 			},
 			"apiGroups": &graphql.Field{
@@ -74,8 +74,8 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 				Description: "List of API Groups and APIs",
 				Name:        "API Groups",
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					// TODO  unexport Resources
-					return c.Resources, nil
+					// TODO  unexport ResourcesPreferred
+					return c.ResourcesPreferred, nil
 				},
 			},
 		},

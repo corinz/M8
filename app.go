@@ -34,7 +34,6 @@ func (a *App) startup(ctx context.Context) {
 	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
 
 	a.cluster = cluster.NewCluster(*apiUrl, *configContext, *configPath)
-	a.cluster.PrintApiGroups()
 
 	schema, err := api.BuildSchema(a.cluster)
 	if err != nil {
@@ -69,10 +68,9 @@ func headlessStartup() {
 	configContext := flag.String("configContext", "", "Kube config context name")
 	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
 
-	cluster := cluster.NewCluster(*apiUrl, *configContext, *configPath)
-	cluster.PrintApiGroups()
+	c := cluster.NewCluster(*apiUrl, *configContext, *configPath)
 
-	schema, err := api.BuildSchema(cluster)
+	schema, err := api.BuildSchema(c)
 	if err != nil {
 		log.Fatal(err)
 	}
