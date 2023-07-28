@@ -1,7 +1,7 @@
 <script lang="ts">
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
-    import {AppGetApiResources, AppGetApiResourcesByName} from "../wailsjs/go/main/App";
+    import {AppGetApiResources, AppGetResourceByName} from "../wailsjs/go/main/App";
     import {v1} from "../wailsjs/go/models";
     import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
@@ -9,12 +9,69 @@
 
     export let searchEventKey: string;
     let searchBarInput: string
-    let tableObject: v1.APIResource[] = [];
+    let namespace: string = ""
+    let tableObject = []
     let numResults: number = 0
     $: numResults = tableObject.length
     let filteredTableObject = []
     let errorMessage: string = "";
 
+    interface api {
+        name: string;
+        singularName: string;
+        namespaced: boolean;
+        kind: string;
+        verbs: string[];
+        shortNames?: string[];
+        categories?: string[];
+    }
+    const blankAPI: api = {
+        categories: [],
+        kind: "",
+        name: "",
+        namespaced: false,
+        shortNames: [],
+        singularName: "",
+        verbs: []
+    }
+
+    interface kind {
+        name: string
+        namespace: string
+        kind: string
+        ip: string
+        phase: string
+    }
+
+    function kindListDestructure(unstructuredObject): kind[] {
+        let list: kind[] = []
+        Object.entries(unstructuredObject).forEach(objArr => {
+            const obj = objArr[1] // unstructured kube object
+            const k = {
+                name: obj["metadata"]["name"],
+                namespace: obj["metadata"]["namespace"],
+                kind: obj["kind"],
+                ip: obj["status"]["podIP"],
+                phase: obj["status"]["phase"]
+            } as kind
+            list.push(k)
+        })
+        return list
+    }
+
+    function apiListDestructure(a: v1.APIResource | v1.APIResource[]): api[] {
+        let list: api[] = []
+        Object.entries(a).forEach(([, obj]) => {
+            // all keys of interface not be null, in case we use obj for table head row keys
+            Object.keys(blankAPI).forEach( key => {
+                obj[key] = obj[key] ?? ""
+            })
+            list.push(obj as api)
+        })
+        return list
+    }
+
+    // Default view
     onMount(async () => tableObject = await AppGetApiResources().then(result => result))
 
     const filterOptions = {
@@ -34,12 +91,18 @@
 
     function search(): void {
         // Don't search blank input
-        if (searchBarInput !== "") {
-            AppGetApiResourcesByName(searchBarInput).then(r => {
-                if (r.name == null || r.name == "") {
+        if (searchBarInput === "apis") {
+            AppGetApiResources().then(r => {
+                tableObject = apiListDestructure(r)
+                numResults = tableObject.length
+                errorMessage = ""
+            })
+        } else if (searchBarInput !== "") {
+            AppGetResourceByName(searchBarInput, namespace).then(rList => {
+                if (!rList) {
                     errorMessage = "Resource not found"
                 } else {
-                    tableObject = [r]
+                    tableObject = kindListDestructure(rList)
                     numResults = tableObject.length
                     errorMessage = ""
                 }
@@ -97,16 +160,16 @@
         {numResults}
     </Paper>
     <div style="padding: 20px 0; color: red">
-    {errorMessage}
+        {errorMessage}
     </div>
 </div>
 
 <div class="scroll">
-{#if filteredTableObject.length !== 0 }
-    <JsonTable data={filteredTableObject}/>
-{:else}
-    <JsonTable data={tableObject}/>
-{/if}
+    {#if filteredTableObject.length !== 0 }
+        <JsonTable data={filteredTableObject}/>
+    {:else}
+        <JsonTable data={tableObject}/>
+    {/if}
 </div>
 
 <style>

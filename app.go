@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
 	"github.com/rs/cors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"log"
 	"m8/internal/api"
 	"m8/internal/cluster"
@@ -119,10 +121,13 @@ func headlessStartup() {
 	}
 }
 
-func (a *App) AppGetApiResourcesByName(name string) v1.APIResource {
-	return a.cluster.GetApiResourceByName(name)
-}
-
 func (a *App) AppGetApiResources() []v1.APIResource {
 	return a.cluster.GetApiResources()
+}
+
+func (a *App) AppGetResourceByName(name string, ns string) []unstructured.Unstructured {
+	u, _ := a.cluster.ResourceByName(name, ns)
+	j, _ := json.MarshalIndent(u, "", "  ")
+	log.Println(string(j))
+	return u
 }

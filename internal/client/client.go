@@ -125,13 +125,22 @@ func buildHashMap(resources []*v1.APIResourceList) (map[string]schema.GroupVersi
 	return m, nil
 }
 
-// gvcFromName returns GVR from Resource Name
-func (c Client) GvrFromName(name string) schema.GroupVersionResource {
-	return c.resourceMap[name]
+// ResourceByName returns resource json by querying gvr hashmap
+func (c Client) ResourceByName(name string, ns string) ([]unstructured.Unstructured, error) {
+	gvr, _ := c.GvrFromName(name)
+	u, _ := c.UnstructuredResourceList(context.TODO(), gvr, ns)
+	return u, nil
 }
 
-func (c Client) GetUnstructuredResourceList(ctx context.Context, gvr schema.GroupVersionResource, namespace string) ([]unstructured.Unstructured, error) {
+// GvrFromName returns GVR from Resource Name
+func (c Client) GvrFromName(name string) (schema.GroupVersionResource, error) {
+	return c.resourceMap[name], nil
+}
+
+// UnstructuredResourceList returns json representation of resource
+func (c Client) UnstructuredResourceList(ctx context.Context, gvr schema.GroupVersionResource, namespace string) ([]unstructured.Unstructured, error) {
 	// TODO error handling, ListOptions argument/defaults
 	list, _ := c.dynamicClient.Resource(gvr).Namespace(namespace).List(ctx, v1.ListOptions{})
+	//itemsJson, _ := json.Marshal(list.Items)
 	return list.Items, nil
 }
