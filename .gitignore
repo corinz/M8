@@ -14,3 +14,8 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 m8
+
+# Wails framework stuff
+build/bin
+node_modules
+frontend/dist

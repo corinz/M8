@@ -1,22 +1,27 @@
 package cluster
 
 import (
-	connect "m8/internal/connect"
-	discovery "m8/internal/discovery"
+	"context"
+	"log"
+	"m8/internal/client"
+	"m8/internal/connect"
 )
 
-// TODO: dont export this struct
 type Cluster struct {
 	connect.Connection
-	*discovery.Discovery
+	*client.Client
 }
 
 func NewCluster(apiUrl string, configContext string, configPath string) *Cluster {
-	c := connect.NewConnection(apiUrl, configContext, configPath)
-	d := discovery.NewDiscovery(c)
+	conn := connect.NewConnection(apiUrl, configContext, configPath)
+	cl, _ := client.NewClient(conn)
+
+	gvr := cl.GvrFromName("daemonsets")
+	jsonO, _ := cl.GetUnstructuredResourceList(context.TODO(), gvr, "")
+	log.Println(jsonO)
 
 	return &Cluster{
-		Connection: c,
-		Discovery:  d,
+		Connection: conn,
+		Client:     cl,
 	}
 }
