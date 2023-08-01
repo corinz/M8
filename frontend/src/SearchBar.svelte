@@ -134,6 +134,7 @@
         }
     }
 
+    // Handles dyanmic input
     function handleInput(): void {
         if (searchEventKey === ':') {
             search()
@@ -146,11 +147,9 @@
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
         if (event.key === 'Enter') {
-            if (searchEventKey === ':') {
-                search()
-            } else if (searchEventKey === '/') {
-                filter()
-            }
+            // prevent the next element (table) from receiving this event
+            event.preventDefault()
+            handleInput()
         }
     }
 </script>
