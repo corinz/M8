@@ -6,6 +6,7 @@
     import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
     import {onMount} from 'svelte';
+    import {defaultFocus} from "./focus"
 
     export let searchEventKey: string;
     let searchBarInput: string = "apis"
@@ -115,8 +116,9 @@
                 }
             })
         }
-        // Clear search bar value after search
+        // Clear search bar and reset focus after search
         searchBarInput = ""
+        defaultFocus()
     }
 
     function filter(): void {
@@ -163,6 +165,7 @@
                 placeholder="Press : to search or / to filter"
                 class="solo-input"
                 type="text"
+                autocomplete="off"
         />
         {numResults}
     </Paper>
