@@ -6,7 +6,10 @@
 
     let activeRowIndex = 0;
     let highlightRow, sortedData;
-    $: sortedData = data;
+    $: {
+        sortedData = data;
+        activeRowIndex = 0;
+    }
     let sortDirection: Lowercase<keyof typeof SortValue> = 'ascending';
     let sort = 'id';
 

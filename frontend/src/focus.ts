@@ -5,9 +5,8 @@ export const defaultFocusElementId: string = 'defaultFocus'
 const element: HTMLElement = null
 export const focusedElement: Writable<HTMLElement> = writable(element);
 
-focusedElement.subscribe((e) => {
+focusedElement.subscribe((e: HTMLElement): void => {
     if (e) {
-        console.log("Setting focus for: ", e)
         e.focus();
     }
 })
