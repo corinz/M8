@@ -8,7 +8,7 @@
     import {onMount} from 'svelte';
 
     export let searchEventKey: string;
-    let searchBarInput: string
+    let searchBarInput: string = "apis"
     let namespace: string = ""
     let tableObject = []
     let numResults: number = 0
@@ -35,34 +35,41 @@
         verbs: []
     }
 
-    interface kind {
-        name: string
-        namespace: string
-        kind: string
-        ip: string
-        phase: string
+    class kind {
+        name: string = ''
+        namespace: string = ''
+        kind: string = ''
+        ip: string = ''
+        phase: string = ''
     }
 
     function kindListDestructure(unstructuredObject): kind[] {
-        let list: kind[] = []
-        Object.entries(unstructuredObject).forEach(objArr => {
-            const obj = objArr[1] // unstructured kube object
-            const k = {
-                name: obj["metadata"]["name"],
-                namespace: obj["metadata"]["namespace"],
-                kind: obj["kind"],
-                ip: obj["status"]["podIP"],
-                phase: obj["status"]["phase"]
-            } as kind
-            list.push(k)
-        })
+        let list: kind[]
+        // destructure into a kind object
+        if( unstructuredObject.length > 0 ) {
+            list = []
+            Object.entries(unstructuredObject).forEach(objArr => {
+                const obj = objArr[1] // unstructured kube object
+                const k = {
+                    name: obj["metadata"]["name"],
+                    namespace: obj["metadata"]["namespace"],
+                    kind: obj["kind"],
+                    //ip: obj["status"]["podIP"],
+                    //phase: obj["status"]["phase"]
+                } as kind
+                list.push(k)
+            })
+        } else {
+            //empty kind obj array to preserve downstream views
+            list = [new kind()]
+        }
         return list
     }
 
     function apiListDestructure(a: v1.APIResource | v1.APIResource[]): api[] {
         let list: api[] = []
         Object.entries(a).forEach(([, obj]) => {
-            // all keys of interface not be null, in case we use obj for table head row keys
+            // all keys of interface must be non-null, in case we use obj for table head row keys
             Object.keys(blankAPI).forEach( key => {
                 obj[key] = obj[key] ?? ""
             })
@@ -72,7 +79,7 @@
     }
 
     // Default view
-    onMount(async () => tableObject = await AppGetApiResources().then(result => result))
+    onMount(async () => search())
 
     const filterOptions = {
         keys: ['name'],

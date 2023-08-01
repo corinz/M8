@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	disc "k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/kubectl/pkg/util/openapi"
 	"log"
 	"m8/internal/connect"
 	"strings"
@@ -19,6 +20,7 @@ type Client struct {
 	resourceMap        map[string]schema.GroupVersionResource
 	discoveryClient    *disc.DiscoveryClient
 	dynamicClient      *dynamic.DynamicClient
+	openApiSchema      openapi.Resources
 }
 
 func NewClient(c connect.Connection) (*Client, error) {
@@ -40,12 +42,15 @@ func NewClient(c connect.Connection) (*Client, error) {
 		log.Println(err)
 	}
 
+	openApiSchema, _ := newOpenAPIClient(disClient)
+
 	return &Client{
 		ResourcesPreferred: preferredResources,
 		version:            ver,
 		resourceMap:        resourceMap,
 		discoveryClient:    disClient,
 		dynamicClient:      dynClient,
+		openApiSchema:      openApiSchema,
 	}, err
 }
 
@@ -68,7 +73,17 @@ func newDynamic(c connect.Connection) (*dynamic.DynamicClient, error) {
 		log.Println(err)
 		log.Fatalln("Failed to create Dynamic Kubernetes Client")
 	}
-	return dynClient, nil
+	return dynClient, err
+}
+
+func newOpenAPIClient(client *disc.DiscoveryClient) (openapi.Resources, error) {
+	parser := openapi.NewOpenAPIParser(client)
+	openApiSchema, err := parser.Parse()
+	if err != nil {
+		log.Println(err)
+	}
+
+	return openApiSchema, err
 }
 
 func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionResource, error) {
@@ -141,6 +156,5 @@ func (c Client) GvrFromName(name string) (schema.GroupVersionResource, error) {
 func (c Client) UnstructuredResourceList(ctx context.Context, gvr schema.GroupVersionResource, namespace string) ([]unstructured.Unstructured, error) {
 	// TODO error handling, ListOptions argument/defaults
 	list, _ := c.dynamicClient.Resource(gvr).Namespace(namespace).List(ctx, v1.ListOptions{})
-	//itemsJson, _ := json.Marshal(list.Items)
 	return list.Items, nil
 }

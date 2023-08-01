@@ -41,7 +41,6 @@
 {#if (!data)}
     Loading...
 {:else if sortedData.length > 0}
-    <!--TODO: make the head row always show-->
     <DataTable
             stickyHeader
             sortable
@@ -52,6 +51,7 @@
             table$aria-label="Multi-Result Table"
             style="width: 100%;"
     >
+        <!-- HEADER ROW -->
         <Head>
             <Row>
                 {#each Object.keys(sortedData[0]) as header, i}
@@ -70,23 +70,26 @@
                 {/each}
             </Row>
         </Head>
-        <Body>
-        {#each Object.entries(sortedData) as [id, obj] }
-            {#if id == activeRowIndex}
-                <Row id="highlight" bind:this={highlightRow}>
-                    {#each Object.values(obj) as val }
-                        <Cell class="highlight">{val}</Cell>
-                    {/each}
-                </Row>
-            {:else }
-                <Row>
-                    {#each Object.values(obj) as val }
-                        <Cell>{val}</Cell>
-                    {/each}
-                </Row>
-            {/if}
-        {/each}
-        </Body>
+        <!-- DATA ROWS -->
+        {#if sortedData.length > 0}
+            <Body>
+            {#each Object.entries(sortedData) as [id, obj] }
+                {#if id == activeRowIndex}
+                    <Row id="highlight" bind:this={highlightRow}>
+                        {#each Object.values(obj) as val }
+                            <Cell class="highlight">{val}</Cell>
+                        {/each}
+                    </Row>
+                {:else }
+                    <Row>
+                        {#each Object.values(obj) as val }
+                            <Cell>{val}</Cell>
+                        {/each}
+                    </Row>
+                {/if}
+            {/each}
+            </Body>
+        {/if}
     </DataTable>
 {/if}
 

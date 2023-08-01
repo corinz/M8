@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
@@ -127,7 +126,5 @@ func (a *App) AppGetApiResources() []v1.APIResource {
 
 func (a *App) AppGetResourceByName(name string, ns string) []unstructured.Unstructured {
 	u, _ := a.cluster.ResourceByName(name, ns)
-	j, _ := json.MarshalIndent(u, "", "  ")
-	log.Println(string(j))
 	return u
 }
