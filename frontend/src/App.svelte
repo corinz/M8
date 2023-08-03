@@ -12,22 +12,22 @@
 
 <script lang="ts">
     import SearchBar from "./SearchBar.svelte";
-    document.body.style.cursor = 'none';
+    import {focusedElement, defaultFocus} from "./focus"
 
+    document.body.style.cursor = 'none';
     let searchEventKey = ''
+    defaultFocus()
 
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
         // preventDefault to ignore it from input box
-        if ( event.key === '/' || event.key === ':' ) { // search bar focus
+        if (event.key === '/' || event.key === ':') { // search bar focus
             searchEventKey = event.key
-            const search = document.getElementById('search')
             event.preventDefault()
-            search.focus()
-        } else if ( event.key === "Escape" ) { // default focus
-            const table = document.getElementById('defaultFocus');
+            focusedElement.set(document.getElementById('search'))
+        } else if (event.key === "Escape") { // default focus
             const highlightRow = document.getElementById('highlight')
-            table.focus();
+            defaultFocus()
             highlightRow.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
         }
     }

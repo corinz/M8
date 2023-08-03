@@ -6,7 +6,10 @@
 
     let activeRowIndex = 0;
     let highlightRow, sortedData;
-    $: sortedData = data;
+    $: {
+        sortedData = data;
+        activeRowIndex = 0;
+    }
     let sortDirection: Lowercase<keyof typeof SortValue> = 'ascending';
     let sort = 'id';
 
@@ -37,9 +40,10 @@
         document.getElementById('defaultFocus').focus();
     }
 </script>
+
 {#if (!data)}
     Loading...
-{:else if data.length > 0}
+{:else if sortedData.length > 0}
     <DataTable
             stickyHeader
             sortable
@@ -50,92 +54,45 @@
             table$aria-label="Multi-Result Table"
             style="width: 100%;"
     >
+        <!-- HEADER ROW -->
         <Head>
             <Row>
-                <Cell columnId="name" style="width: 100%;">
-                    <Label>Name</Label>
-                    <IconButton id="defaultFocus" class="material-icons">arrow_upward</IconButton>
-                </Cell>
-                <Cell columnId="singularName">
-                    <Label>Singular Name</Label>
-                    <IconButton class="material-icons">arrow_upward</IconButton>
-                </Cell>
-                <Cell columnId="namespaced">
-                    <Label>Namespaced</Label>
-                    <IconButton class="material-icons">arrow_upward</IconButton>
-                </Cell>
-                <Cell columnId="kind">
-                    <Label>Kind</Label>
-                    <IconButton class="material-icons">arrow_upward</IconButton>
-                </Cell>
-                <Cell columnId="verbs">
-                    <Label>Verbs</Label>
-                    <IconButton class="material-icons">arrow_upward</IconButton>
-                </Cell>
-                <Cell columnId="shortNames">
-                    <Label>Short Names</Label>
-                    <IconButton class="material-icons">arrow_upward</IconButton>
-                </Cell>
-                <Cell columnId="categories">
-                    <Label>Categories</Label>
-                    <IconButton class="material-icons">arrow_upward</IconButton>
-                </Cell>
+                {#each Object.keys(sortedData[0]) as header, i}
+                    {#if i == 0 }
+                        <Cell columnId={header} style="width: 100%;">
+                            <Label>{header}</Label>
+                            <!--defaultFocus enables default scrolling capability-->
+                            <IconButton id="defaultFocus" class="material-icons">arrow_upward</IconButton>
+                        </Cell>
+                    {:else }
+                        <Cell columnId={header}>
+                            <Label>{header}</Label>
+                            <IconButton class="material-icons">arrow_upward</IconButton>
+                        </Cell>
+                    {/if}
+                {/each}
             </Row>
         </Head>
-        <Body>
-        {#each Object.entries(sortedData) as [id, {
-            name,
-            singularName,
-            namespaced,
-            kind,
-            verbs,
-            shortNames,
-            categories
-        }]}
-            {#if id == activeRowIndex}
-                <Row id="highlight" bind:this={highlightRow}>
-                    <Cell class="highlight">{name}</Cell>
-                    <Cell class="highlight">{singularName}</Cell>
-                    <Cell class="highlight">{namespaced}</Cell>
-                    <Cell class="highlight">{kind}</Cell>
-                    <Cell class="highlight">{verbs}</Cell>
-                    <Cell class="highlight">{shortNames}</Cell>
-                    <Cell class="highlight">{categories}</Cell>
-                </Row>
-            {:else }
-                <Row>
-                    <Cell>{name}</Cell>
-                    <Cell>{singularName}</Cell>
-                    <Cell>{namespaced}</Cell>
-                    <Cell>{kind}</Cell>
-                    <Cell>{verbs}</Cell>
-                    <Cell>{shortNames}</Cell>
-                    <Cell>{categories}</Cell>
-                </Row>
-            {/if}
-        {/each}
-        </Body>
-    </DataTable>
-{:else}
-    <DataTable stickyHeader table$aria-label="List" style="width: 100%;">
-        <Head>
-            <Row>
-                <Cell>Name</Cell>
-                <Cell>Singular Name</Cell>
-                <Cell>Namespaced</Cell>
-                <Cell>Kind</Cell>
-                <Cell>Verbs</Cell>
-                <Cell>Short Names</Cell>
-                <Cell>Categories</Cell>
-            </Row>
-        </Head>
-        <Body>
-        <Row>
-            {#each Object.values(data) as value}
-                <Cell>{value}</Cell>
+        <!-- DATA ROWS -->
+        {#if sortedData.length > 0}
+            <Body>
+            {#each Object.entries(sortedData) as [id, obj] }
+                {#if id == activeRowIndex}
+                    <Row id="highlight" bind:this={highlightRow}>
+                        {#each Object.values(obj) as val }
+                            <Cell class="highlight">{val}</Cell>
+                        {/each}
+                    </Row>
+                {:else }
+                    <Row>
+                        {#each Object.values(obj) as val }
+                            <Cell>{val}</Cell>
+                        {/each}
+                    </Row>
+                {/if}
             {/each}
-        </Row>
-        </Body>
+            </Body>
+        {/if}
     </DataTable>
 {/if}
 
