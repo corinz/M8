@@ -1,7 +1,9 @@
 <script lang="ts">
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
-    import {AppGetApiResources, AppGetResourceByName} from "../wailsjs/go/main/App";
+    import {
+        AppGetApiResources, AppGetDeployments
+    } from "../wailsjs/go/main/App";
     import {v1} from "../wailsjs/go/models";
     import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
@@ -26,6 +28,7 @@
         shortNames?: string[];
         categories?: string[];
     }
+
     const blankAPI: api = {
         categories: [],
         kind: "",
@@ -47,7 +50,7 @@
     function kindListDestructure(unstructuredObject): kind[] {
         let list: kind[]
         // destructure into a kind object
-        if( unstructuredObject.length > 0 ) {
+        if (unstructuredObject.length > 0) {
             list = []
             Object.entries(unstructuredObject).forEach(objArr => {
                 const obj = objArr[1] // unstructured kube object
@@ -71,7 +74,7 @@
         let list: api[] = []
         Object.entries(a).forEach(([, obj]) => {
             // all keys of interface must be non-null, in case we use obj for table head row keys
-            Object.keys(blankAPI).forEach( key => {
+            Object.keys(blankAPI).forEach(key => {
                 obj[key] = obj[key] ?? ""
             })
             list.push(obj as api)
@@ -106,7 +109,7 @@
                 errorMessage = ""
             })
         } else if (searchBarInput !== "") {
-            AppGetResourceByName(searchBarInput, namespace).then(rList => {
+            AppGetUnstructuredResourceByName(searchBarInput, namespace).then(rList => {
                 if (!rList) {
                     errorMessage = "Resource not found"
                 } else {

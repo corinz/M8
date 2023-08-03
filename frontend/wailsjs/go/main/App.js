@@ -6,6 +6,6 @@ export function AppGetApiResources() {
   return window['go']['main']['App']['AppGetApiResources']();
 }
 
-export function AppGetResourceByName(arg1, arg2) {
-  return window['go']['main']['App']['AppGetResourceByName'](arg1, arg2);
+export function AppGetDeployments() {
+  return window['go']['main']['App']['AppGetDeployments']();
 }
