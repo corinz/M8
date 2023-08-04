@@ -42,7 +42,7 @@
 </script>
 
 {#if (!data)}
-    Loading...
+    Dataset is empty
 {:else if sortedData.length > 0}
     <DataTable
             stickyHeader

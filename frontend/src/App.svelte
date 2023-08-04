@@ -13,6 +13,13 @@
 <script lang="ts">
     import SearchBar from "./SearchBar.svelte";
     import {focusedElement, defaultFocus} from "./focus"
+    import { Client, cacheExchange, fetchExchange, setContextClient } from '@urql/svelte';
+
+    const client = new Client({
+        url: 'http://localhost:8080/graphql',
+        exchanges: [cacheExchange, fetchExchange],
+    });
+    setContextClient(client);
 
     document.body.style.cursor = 'none';
     let searchEventKey = ''

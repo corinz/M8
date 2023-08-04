@@ -1,23 +1,55 @@
 <script lang="ts">
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
-    import {
-        AppGetApiResources, AppGetDeployments
-    } from "../wailsjs/go/main/App";
-    import {v1} from "../wailsjs/go/models";
     import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
     import {onMount} from 'svelte';
     import {defaultFocus} from "./focus"
+    import {queryStore, gql, getContextClient} from '@urql/svelte';
+    import {v1} from "../wailsjs/go/models";
 
     export let searchEventKey: string;
     let searchBarInput: string = "apis"
     let namespace: string = ""
     let tableObject = []
+    // TODO: fix numResults
     let numResults: number = 0
     $: numResults = tableObject.length
     let filteredTableObject = []
     let errorMessage: string = "";
+
+    const client = getContextClient()
+    const apiResourcesQuery = gql`
+        query Query {
+            apiResources {
+                Kind
+                Name
+                ShortNames
+        }}`
+    const apiGroupsQuery = gql`query RootQuery {
+        apiGroups {
+            APIResources {
+                Kind
+            }
+            GroupVersion
+        }}`
+    let query = apiResourcesQuery
+
+    $: qStore = queryStore({
+        client,
+        query,
+        variables: undefined
+    })
+
+    // TODO: implement refresh
+    function refresh() {
+        queryStore({
+            variables: undefined,
+            client,
+            query,
+            requestPolicy: 'network-only'
+        });
+    }
 
     interface api {
         name: string;
@@ -47,6 +79,7 @@
         phase: string = ''
     }
 
+    // TODO: destructure types coming from graphql
     function kindListDestructure(unstructuredObject): kind[] {
         let list: kind[]
         // destructure into a kind object
@@ -103,27 +136,17 @@
     function search(): void {
         // Don't search blank input
         if (searchBarInput === "apis") {
-            AppGetApiResources().then(r => {
-                tableObject = apiListDestructure(r)
-                numResults = tableObject.length
-                errorMessage = ""
-            })
+            query = apiResourcesQuery
         } else if (searchBarInput !== "") {
-            AppGetUnstructuredResourceByName(searchBarInput, namespace).then(rList => {
-                if (!rList) {
-                    errorMessage = "Resource not found"
-                } else {
-                    tableObject = kindListDestructure(rList)
-                    numResults = tableObject.length
-                    errorMessage = ""
-                }
-            })
+            // TODO: write generic query for other resource types
+            query = apiGroupsQuery
         }
         // Clear search bar and reset focus after search
         searchBarInput = ""
         defaultFocus()
     }
 
+    // TODO: fix filtering
     function filter(): void {
         if (searchBarInput == "") { // if empty search, empty filter
             filteredTableObject = []
@@ -176,13 +199,24 @@
     </div>
 </div>
 
-<div class="scroll">
-    {#if filteredTableObject.length !== 0 }
-        <JsonTable data={filteredTableObject}/>
-    {:else}
-        <JsonTable data={tableObject}/>
-    {/if}
-</div>
+{#if $qStore.fetching}
+    <p>Fetching...</p>
+{:else if $qStore.error}
+    <p>Error: {$qStore.error.message}</p>
+{:else if !$qStore.data}
+    <p>Empty dataset</p>
+{:else}
+    <div class="scroll">
+        {#if filteredTableObject.length !== 0 }
+            filtered
+            <JsonTable data={$qStore.data}/>
+        {:else}
+<!--            TODO: make the data table injection generic-->
+            <JsonTable data={$qStore.data["apiResources"]}/>
+        {/if}
+    </div>
+{/if}
+
 
 <style>
     * :global(.solo-paper) {
