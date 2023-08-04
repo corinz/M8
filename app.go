@@ -6,6 +6,7 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
 	"github.com/rs/cors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"m8/internal/api"
 	"m8/internal/cluster"
@@ -32,7 +33,7 @@ func (a *App) startup(ctx context.Context) {
 	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
 
 	a.cluster = cluster.NewCluster(*apiUrl, *configContext, *configPath)
-	graphqlStartup(a.cluster, false)
+	graphqlStartup(a.cluster, true)
 }
 
 // startup is called when from main() when -headless=true
@@ -95,12 +96,14 @@ func graphqlStartup(cluster *cluster.Cluster, apollo bool) {
 			println("Error:", err.Error())
 		}
 	} else {
-		// TODO: the default policy is very open
-		graphqlHandlerWithCors := cors.Default().Handler(graphqlHandler)
-		http.Handle("/graphql", graphqlHandlerWithCors)
 		err = http.ListenAndServe(":8080", graphqlHandlerWithCors)
 		if err != nil {
 			println("Error:", err.Error())
 		}
 	}
+}
+
+// AppGetApiResource for Wails type binding
+func (a *App) AppGetApiResource() v1.APIResource {
+	return v1.APIResource{}
 }
