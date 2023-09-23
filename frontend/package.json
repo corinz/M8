@@ -25,6 +25,7 @@
     "@urql/svelte": "^4.0.4",
     "fuse": "^0.4.0",
     "fuse.js": "^6.6.2",
+    "gql-query-builder": "^3.8.0",
     "svelte-material-ui": "^7.0.0-beta.14"
   }
 }

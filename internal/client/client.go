@@ -4,7 +4,6 @@ import (
 	"context"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
@@ -19,29 +18,45 @@ import (
 )
 
 type Client struct {
-	version            *version.Info
-	ResourcesPreferred []*v1.APIResourceList
-	gvrMap             map[string]schema.GroupVersionResource
-	gvkMap             map[string]schema.GroupVersionKind
-	discoveryClient    *disc.DiscoveryClient
-	dynamicClient      *dynamic.DynamicClient
-	openApiSchema      openapi.Resources
-	KnownTypesMap      map[schema.GroupVersionKind]reflect.Type
-	KnownTypesObjMap   map[string]any
+	version                *version.Info
+	PreferredResourcesList []*v1.APIResourceList
+	PreferredResourcesMap  map[string]v1.APIResource
+	gvrMap                 map[string]schema.GroupVersionResource
+	gvkMap                 map[string]schema.GroupVersionKind
+	discoveryClient        *disc.DiscoveryClient
+	dynamicClient          *dynamic.DynamicClient
+	openApiSchema          openapi.Resources
+	KnownTypesMap          map[schema.GroupVersionKind]reflect.Type
+	KnownTypesObjMap       map[string]any
 }
 
 func NewClient(c connect.Connection) (*Client, error) {
-	disClient, _ := newDiscovery(c)
-	dynClient, _ := newDynamic(c)
+	disClient, err := newDiscovery(c)
+	if err != nil {
+		log.Println(err)
+	}
+
+	dynClient, err := newDynamic(c)
+	if err != nil {
+		log.Println(err)
+	}
 
 	ver, err := disClient.ServerVersion()
 	if err != nil {
 		log.Println(err)
 	}
 
-	preferredResources, err := disClient.ServerPreferredResources()
+	PreferredResourcesList, err := disClient.ServerPreferredResources()
 	if err != nil {
 		log.Println(err)
+	}
+	PreferredResourcesMap := make(map[string]v1.APIResource)
+	for _, apiResourceList := range PreferredResourcesList {
+		for _, apiResource := range apiResourceList.APIResources {
+			// Group param is missing, set this?
+			//apiResource.Group = apiResourceList.GroupVersion
+			PreferredResourcesMap[apiResource.Kind] = apiResource
+		}
 	}
 
 	gvrMap, gvkMap, err := allResources(disClient)
@@ -49,21 +64,25 @@ func NewClient(c connect.Connection) (*Client, error) {
 		log.Println(err)
 	}
 
-	openApiSchema, _ := newOpenAPIClient(disClient)
-	knownTypesObjMap := make(map[string]any)
+	openApiSchema, err := newOpenAPIClient(disClient)
+	if err != nil {
+		log.Println(err)
+	}
 
 	client := &Client{
-		ResourcesPreferred: preferredResources,
-		version:            ver,
-		gvrMap:             gvrMap,
-		gvkMap:             gvkMap,
-		discoveryClient:    disClient,
-		dynamicClient:      dynClient,
-		openApiSchema:      openApiSchema,
-		KnownTypesMap:      scheme.Scheme.AllKnownTypes(),
-		KnownTypesObjMap:   knownTypesObjMap,
+		PreferredResourcesList: PreferredResourcesList,
+		PreferredResourcesMap:  PreferredResourcesMap,
+		version:                ver,
+		gvrMap:                 gvrMap,
+		gvkMap:                 gvkMap,
+		discoveryClient:        disClient,
+		dynamicClient:          dynClient,
+		openApiSchema:          openApiSchema,
+		KnownTypesMap:          scheme.Scheme.AllKnownTypes(),
+		KnownTypesObjMap:       make(map[string]any),
 	}
 	client.getAllServerResources()
+
 	return client, nil
 }
 
@@ -108,9 +127,12 @@ func (c Client) getAllServerResources() {
 			continue
 		}
 		switch name {
-		// TODO write case every supported type
 		case "Deployment":
 			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.Deployment)
+		case "DaemonSet":
+			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.DaemonSet)
+		default:
+			log.Println("TODO: Unhandled GVK: ", gvk.Kind, gvk.Group, gvk.Version)
 		}
 	}
 }
@@ -142,7 +164,7 @@ func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionR
 					if !gvrExists {
 						gvrMap[resource.Kind] = gvr
 					} else if ver.Version > gvr.Version { // TODO: else, use/replace with latest api
-						//m[resource.Name] = gvr
+						//m[resource.Kind] = gvr
 					}
 
 					gvk := schema.GroupVersionKind{
@@ -155,20 +177,13 @@ func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionR
 					if !gvkExists {
 						gvkMap[resource.Kind] = gvk
 					} else if ver.Version > gvk.Version { // TODO: else, use/replace with latest api
-						//gvkMap[resource.Name] = gvk
+						//gvkMap[resource.Kind] = gvk
 					}
 				}
 			}
 		}
 	}
 	return gvrMap, gvkMap, nil
-}
-
-// UnstructuredResourceByName returns resource json by querying gvr hashmap
-func (c Client) UnstructuredResourceByName(name string, ns string) ([]unstructured.Unstructured, error) {
-	gvr, _ := c.GvrFromName(name)
-	u, _ := c.UnstructuredResourceList(context.TODO(), gvr, ns)
-	return u, nil
 }
 
 // ResourceByName returns a reflection whose interface is an array of kube api objects
@@ -193,7 +208,7 @@ func (c Client) ResourceByName(gvk schema.GroupVersionKind, namespace string) re
 	gvkSlice := reflect.MakeSlice(gvkSliceType, 0, 0)
 
 	// Range over unstructured objects
-	uList, _ := c.UnstructuredResourceList(context.TODO(), gvr, namespace)
+	uList, _ := c.UnstructuredResourceListByGvr(context.TODO(), gvr, namespace)
 	for _, u := range uList {
 		// new instance of reflect type
 		gvkVal := reflect.New(gvkType)
@@ -220,14 +235,4 @@ func (c Client) GvrFromName(name string) (schema.GroupVersionResource, error) {
 // GvkFromName returns GVR from Resource Name
 func (c Client) GvkFromName(name string) (schema.GroupVersionKind, error) {
 	return c.gvkMap[name], nil
-}
-
-// UnstructuredResourceList returns json representation of resource
-func (c Client) UnstructuredResourceList(ctx context.Context, gvr schema.GroupVersionResource, namespace string) ([]unstructured.Unstructured, error) {
-	// TODO error handling, ListOptions argument/defaults
-	list, _ := c.dynamicClient.Resource(gvr).Namespace(namespace).List(ctx, v1.ListOptions{})
-	if list == nil {
-		return nil, nil
-	}
-	return list.Items, nil
 }
