@@ -14,7 +14,6 @@
     let sort = 'id';
 
     function handleSort() {
-        sortedData = data
         sortedData.sort((a, b) => {
             const [aVal, bVal] = [a[sort], b[sort]][
                 sortDirection === 'ascending' ? 'slice' : 'reverse'
@@ -24,7 +23,6 @@
             }
             return Number(aVal) - Number(bVal);
         });
-        sortedData = sortedData;
     }
 
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
@@ -32,7 +30,7 @@
         if (event.key === 'ArrowUp' || event.key === 'Up') {
             activeRowIndex = Math.max(0, activeRowIndex - 1);
         } else if (event.key === 'ArrowDown' || event.key === 'Down') {
-            activeRowIndex = Math.min(data.length - 1, activeRowIndex + 1);
+            activeRowIndex = Math.min(sortedData.length - 1, activeRowIndex + 1);
         }
     }
 
@@ -41,8 +39,8 @@
     }
 </script>
 
-{#if (!data)}
-    Loading...
+{#if (!sortedData)}
+    Dataset is empty
 {:else if sortedData.length > 0}
     <DataTable
             stickyHeader
@@ -74,7 +72,7 @@
             </Row>
         </Head>
         <!-- DATA ROWS -->
-        {#if sortedData.length > 0}
+        <!--{#if sortedData.length > 0}-->
             <Body>
             {#each Object.entries(sortedData) as [id, obj] }
                 {#if id == activeRowIndex}
@@ -92,7 +90,7 @@
                 {/if}
             {/each}
             </Body>
-        {/if}
+        <!--{/if}-->
     </DataTable>
 {/if}
 

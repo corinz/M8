@@ -1,93 +1,61 @@
 <script lang="ts">
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
-    import {
-        AppGetApiResources, AppGetDeployments
-    } from "../wailsjs/go/main/App";
-    import {v1} from "../wailsjs/go/models";
     import JsonTable from "./JsonTable.svelte";
-    import Fuse from 'fuse.js'
+    // import Fuse from 'fuse.js'
     import {onMount} from 'svelte';
     import {defaultFocus} from "./focus"
+    import {queryStore, gql, getContextClient} from '@urql/svelte';
 
     export let searchEventKey: string;
-    let searchBarInput: string = "apis"
-    let namespace: string = ""
-    let tableObject = []
     let numResults: number = 0
-    $: numResults = tableObject.length
-    let filteredTableObject = []
+    // $: numResults = null  TODO: deprecated tables
     let errorMessage: string = "";
-
-    interface api {
-        name: string;
-        singularName: string;
-        namespaced: boolean;
-        kind: string;
-        verbs: string[];
-        shortNames?: string[];
-        categories?: string[];
-    }
-
-    const blankAPI: api = {
-        categories: [],
-        kind: "",
-        name: "",
-        namespaced: false,
-        shortNames: [],
-        singularName: "",
-        verbs: []
-    }
-
-    class kind {
-        name: string = ''
-        namespace: string = ''
-        kind: string = ''
-        ip: string = ''
-        phase: string = ''
-    }
-
-    function kindListDestructure(unstructuredObject): kind[] {
-        let list: kind[]
-        // destructure into a kind object
-        if (unstructuredObject.length > 0) {
-            list = []
-            Object.entries(unstructuredObject).forEach(objArr => {
-                const obj = objArr[1] // unstructured kube object
-                const k = {
-                    name: obj["metadata"]["name"],
-                    namespace: obj["metadata"]["namespace"],
-                    kind: obj["kind"],
-                    //ip: obj["status"]["podIP"],
-                    //phase: obj["status"]["phase"]
-                } as kind
-                list.push(k)
-            })
-        } else {
-            //empty kind obj array to preserve downstream views
-            list = [new kind()]
-        }
-        return list
-    }
-
-    function apiListDestructure(a: v1.APIResource | v1.APIResource[]): api[] {
-        let list: api[] = []
-        Object.entries(a).forEach(([, obj]) => {
-            // all keys of interface must be non-null, in case we use obj for table head row keys
-            Object.keys(blankAPI).forEach(key => {
-                obj[key] = obj[key] ?? ""
-            })
-            list.push(obj as api)
-        })
-        return list
-    }
+    let debug = false;
 
     // Default view
+    let searchBarInput: string = "Deployment"
     onMount(async () => search())
-
     const filterOptions = {
         keys: ['name'],
         threshold: 0.40 // 0 = perfect match, 1 = indiscriminate
+    }
+
+    // Graphql Client and queries
+    const client = getContextClient()
+    const apiResourcesQuery = gql`query RootQuery {
+          apiResources {
+            APIResources {
+              Kind
+              Name
+              ShortNames
+            }}}`
+    const resourcesQuery = gql`query RootQuery($name: String) {
+          resources(name: $name) {
+            ObjectMeta {
+              Name
+              Namespace
+            }
+            TypeMeta {
+              APIVersion
+              Kind
+            }}}`
+
+    let qStore //OperationResultStore<any, { [p: string]: any } | void> & Pausable;
+    let query = apiResourcesQuery
+    let variables = {}
+    $: qStore = queryStore({
+        client,
+        query,
+        variables
+    })
+
+    if (debug) {
+        client.subscribeToDebugTarget(event => {
+            if (event.source === 'cacheExchange')
+                return;
+            console.log("GQL: ", event);
+        });
     }
 
     function debounce(func, delay) {
@@ -103,46 +71,39 @@
     function search(): void {
         // Don't search blank input
         if (searchBarInput === "apis") {
-            AppGetApiResources().then(r => {
-                tableObject = apiListDestructure(r)
-                numResults = tableObject.length
-                errorMessage = ""
-            })
+            query = apiResourcesQuery
+            variables = {}
         } else if (searchBarInput !== "") {
-            AppGetUnstructuredResourceByName(searchBarInput, namespace).then(rList => {
-                if (!rList) {
-                    errorMessage = "Resource not found"
-                } else {
-                    tableObject = kindListDestructure(rList)
-                    numResults = tableObject.length
-                    errorMessage = ""
-                }
-            })
+            const name = searchBarInput
+            variables = {name}
+            query = resourcesQuery
         }
         // Clear search bar and reset focus after search
         searchBarInput = ""
+        // TODO: failed search breaks focus
         defaultFocus()
     }
 
-    function filter(): void {
-        if (searchBarInput == "") { // if empty search, empty filter
-            filteredTableObject = []
-            numResults = tableObject.length
-        } else {
-            console.log("Filtering: ", searchBarInput)
-            const fuse = new Fuse(tableObject, filterOptions)
-            let filteredTableObjectMap = fuse.search(searchBarInput)
-            filteredTableObject = filteredTableObjectMap.map((idx) => idx.item)
-            numResults = filteredTableObject.length
-        }
-    }
+    // function filter(): void {
+    //     if (searchBarInput == "") { // if empty search, empty filter
+    //         filteredTableObject = []
+    //         numResults = tableObject.length
+    //     } else {
+    //         console.log("Filtering: ", searchBarInput)
+    //         const fuse = new Fuse(tableObject, filterOptions)
+    //         let filteredTableObjectMap = fuse.search(searchBarInput)
+    //         filteredTableObject = filteredTableObjectMap.map((idx) => idx.item)
+    //         numResults = filteredTableObject.length
+    //     }
+    // }
 
     // Handles dyanmic input
     function handleInput(): void {
         if (searchEventKey === ':') {
             search()
         } else if (searchEventKey === '/') {
-            filter()
+            // TODO: filter is broken
+            // filter()
         }
     }
 
@@ -154,6 +115,19 @@
             event.preventDefault()
             handleInput()
         }
+    }
+
+    // flattens the object by moving children keys to the top level
+    function flattenResourceObj(data) {
+        if (!data || (Array.isArray(data) && !data.length) ){
+            return []
+        }
+        let obj = []
+        data.forEach( entry => {
+            const {ObjectMeta, TypeMeta, ...rest } = entry
+            obj.push({...ObjectMeta, ...TypeMeta, ...rest })
+        })
+        return obj
     }
 </script>
 
@@ -176,13 +150,17 @@
     </div>
 </div>
 
-<div class="scroll">
-    {#if filteredTableObject.length !== 0 }
-        <JsonTable data={filteredTableObject}/>
-    {:else}
-        <JsonTable data={tableObject}/>
-    {/if}
-</div>
+{#if $qStore.fetching}
+    <p>Fetching...</p>
+{:else if $qStore.error}
+    <p>Error: {$qStore.error.message}</p>
+{:else if !$qStore.data}
+    <p>Empty dataset</p>
+{:else}
+    <div class="scroll">
+        <JsonTable data={flattenResourceObj($qStore.data["resources"])}/>
+    </div>
+{/if}
 
 <style>
     * :global(.solo-paper) {
