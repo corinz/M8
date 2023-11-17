@@ -13,6 +13,7 @@
     "@smui/data-table": "^7.0.0-beta.14",
     "@sveltejs/vite-plugin-svelte": "^1.0.1",
     "@tsconfig/svelte": "^3.0.0",
+    "@types/underscore": "^1.11.14",
     "svelte": "^3.49.0",
     "svelte-check": "^2.8.0",
     "svelte-preprocess": "^4.10.7",
@@ -26,6 +27,7 @@
     "fuse": "^0.4.0",
     "fuse.js": "^6.6.2",
     "gql-query-builder": "^3.8.0",
-    "svelte-material-ui": "^7.0.0-beta.14"
+    "svelte-material-ui": "^7.0.0-beta.14",
+    "underscore": "^1.13.6"
   }
 }

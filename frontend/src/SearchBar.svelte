@@ -2,46 +2,30 @@
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
     import JsonTable from "./JsonTable.svelte";
-    // import Fuse from 'fuse.js'
+    import Fuse from 'fuse.js'
     import {onMount} from 'svelte';
     import {defaultFocus} from "./focus"
     import {queryStore, gql, getContextClient} from '@urql/svelte';
+    import _ from 'underscore';
+    import {apiResourcesQuery, resourcesQuery} from "./gqlQueries"
+    import {flattenResourceObj} from "./utils"
 
+    // Defaults
     export let searchEventKey: string;
-    let numResults: number = 0
-    let errorMessage: string = "";
     let debug = false;
-
-    const debounceDelay: number = 1000
-    // Default view
     let searchBarInput: string = "Deployment"
     onMount(async () => search())
     const filterOptions = {
-        keys: ['name'],
+        keys: ['name', 'Name'],
         threshold: 0.40 // 0 = perfect match, 1 = indiscriminate
     }
 
+    // debounce
+    $: debounceDelay = searchEventKey === '/' ? 150 : 850
+    $: debouncedHandleInput = _.debounce(handleInput, debounceDelay)
+
     // Graphql Client and queries
     const client = getContextClient()
-    const apiResourcesQuery = gql`query RootQuery {
-          apiResources {
-            APIResources {
-              Kind
-              Name
-              ShortNames
-            }}}`
-    const resourcesQuery = gql`query RootQuery($name: String) {
-          resources(name: $name) {
-            ObjectMeta {
-              Name
-              Namespace
-            }
-            TypeMeta {
-              APIVersion
-              Kind
-            }}}`
-
-    let qStore //OperationResultStore<any, { [p: string]: any } | void> & Pausable;
     let query = apiResourcesQuery
     let queryVars = {}
     $: qStore = queryStore({
@@ -49,6 +33,14 @@
         query,
         variables: queryVars
     })
+
+    // query store and tables
+    let filteredTableObject = null
+    $: unfilteredTableObject = $qStore.data != null ? $qStore.data["resources"] : []
+    $: tableObject = filteredTableObject ?? unfilteredTableObject
+    $: numResults = tableObject == null ? 0 : tableObject.length
+    $: queryError = $qStore.error
+    $: queryFetching = $qStore.fetching
 
     if (debug) {
         client.subscribeToDebugTarget(event => {
@@ -58,18 +50,7 @@
         });
     }
 
-    function debounce(func, delay) {
-        let timeoutId;
-        return function (...args) {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(this, args);
-            }, delay);
-        };
-    }
-
     function search(): void {
-        numResults = 0
         // Don't search blank input
         if (searchBarInput === "apis") {
             query = apiResourcesQuery
@@ -83,31 +64,27 @@
         searchBarInput = ""
 
         // defaultFocus if query was successful
-        if($qStore.data["resources"].entries == 0 ) {
+        if(!$qStore.data) {
             defaultFocus()
         }
     }
 
-    // function filter(): void {
-    //     if (searchBarInput == "") { // if empty search, empty filter
-    //         filteredTableObject = []
-    //         numResults = tableObject.length
-    //     } else {
-    //         console.log("Filtering: ", searchBarInput)
-    //         const fuse = new Fuse(tableObject, filterOptions)
-    //         let filteredTableObjectMap = fuse.search(searchBarInput)
-    //         filteredTableObject = filteredTableObjectMap.map((idx) => idx.item)
-    //         numResults = filteredTableObject.length
-    //     }
-    // }
+    function filter(): void {
+        if (searchBarInput == "") {
+            filteredTableObject = null
+        } else {
+            const fuse = new Fuse(flattenResourceObj(unfilteredTableObject), filterOptions)
+            let filteredTableObjectMap = fuse.search(searchBarInput)
+            filteredTableObject = filteredTableObjectMap.map((idx) => idx.item)
+        }
+    }
 
     // Handles dyanmic input
     function handleInput(): void {
         if (searchEventKey === ':') {
             search()
         } else if (searchEventKey === '/') {
-            // TODO: filter is broken
-            // filter()
+            filter()
         }
     }
 
@@ -115,24 +92,22 @@
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
         if (event.key === 'Enter') {
-            // prevent the next element (table) from receiving this event
-            event.preventDefault()
+            // cancel debounce
+            debouncedHandleInput.cancel()
             handleInput()
         }
     }
 
-    // flattens the object by moving children keys to the top level
-    function flattenResourceObj(data) {
-        if (!data || (Array.isArray(data) && !data.length) ){
-            return []
-        }
-        let obj = []
-        data.forEach( entry => {
-            numResults++
-            const {ObjectMeta, TypeMeta, ...rest } = entry
-            obj.push({...ObjectMeta, ...TypeMeta, ...rest })
-        })
-        return obj
+    let placeholder
+    $: switch (searchEventKey) {
+        case "/":
+            placeholder = "filter"
+            break
+        case ":":
+            placeholder = "search"
+            break
+        default:
+            placeholder = "Press : to search or / to filter"
     }
 </script>
 
@@ -142,28 +117,28 @@
                 id="search"
                 bind:value={searchBarInput}
                 on:keydown={handleKeyDown}
-                on:input={debounce(handleInput, debounceDelay)}
-                placeholder="Press : to search or / to filter"
+                on:input={debouncedHandleInput}
+                placeholder={placeholder}
                 class="solo-input"
                 type="text"
                 autocomplete="off"
         />
         {numResults}
     </Paper>
-    <div style="padding: 20px 0; color: red">
-        {errorMessage}
-    </div>
+<!--    <div style="padding: 20px 0; color: red">-->
+<!--        {errorMessage}-->
+<!--    </div>-->
 </div>
 
-{#if $qStore.fetching}
+{#if queryFetching}
     <p>Fetching...</p>
-{:else if $qStore.error}
-    <p>Error: {$qStore.error.message}</p>
-{:else if !$qStore.data["resources"]}
+{:else if queryError}
+    <p>Error: {queryError.message}</p>
+{:else if !tableObject}
     <p>Empty dataset</p>
 {:else}
     <div class="scroll">
-        <JsonTable data={flattenResourceObj($qStore.data["resources"])}/>
+        <JsonTable data={flattenResourceObj(tableObject)}/>
     </div>
 {/if}
 
