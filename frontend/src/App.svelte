@@ -28,10 +28,9 @@
 
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
-        // preventDefault to ignore it from input box
         if (event.key === '/' || event.key === ':') { // search bar focus
             searchEventKey = event.key
-            event.preventDefault()
+            event.preventDefault() // preventDefault to ignore it from input box
             focusedElement.set(document.getElementById('search'))
         } else if (event.key === "Escape") { // default focus
             const highlightRow = document.getElementById('highlight')

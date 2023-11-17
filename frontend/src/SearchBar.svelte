@@ -13,6 +13,7 @@
     let errorMessage: string = "";
     let debug = false;
 
+    const debounceDelay: number = 1000
     // Default view
     let searchBarInput: string = "Deployment"
     onMount(async () => search())
@@ -43,11 +44,11 @@
 
     let qStore //OperationResultStore<any, { [p: string]: any } | void> & Pausable;
     let query = apiResourcesQuery
-    let variables = {}
+    let queryVars = {}
     $: qStore = queryStore({
         client,
         query,
-        variables
+        variables: queryVars
     })
 
     if (debug) {
@@ -72,16 +73,19 @@
         // Don't search blank input
         if (searchBarInput === "apis") {
             query = apiResourcesQuery
-            variables = {}
+            queryVars = {}
         } else if (searchBarInput !== "") {
             const name = searchBarInput
-            variables = {name}
+            queryVars = {name}
             query = resourcesQuery
         }
         // Clear search bar and reset focus after search
         searchBarInput = ""
-        // TODO: failed search breaks focus
-        defaultFocus()
+
+        // defaultFocus if query was successful
+        if($qStore.data["resources"].entries == 0 ) {
+            defaultFocus()
+        }
     }
 
     // function filter(): void {
@@ -137,7 +141,7 @@
                 id="search"
                 bind:value={searchBarInput}
                 on:keydown={handleKeyDown}
-                on:input={debounce(handleInput, 750)}
+                on:input={debounce(handleInput, debounceDelay)}
                 placeholder="Press : to search or / to filter"
                 class="solo-input"
                 type="text"
