@@ -9,7 +9,6 @@
 
     export let searchEventKey: string;
     let numResults: number = 0
-    // $: numResults = null  TODO: deprecated tables
     let errorMessage: string = "";
     let debug = false;
 
@@ -70,6 +69,7 @@
     }
 
     function search(): void {
+        numResults = 0
         // Don't search blank input
         if (searchBarInput === "apis") {
             query = apiResourcesQuery
@@ -128,6 +128,7 @@
         }
         let obj = []
         data.forEach( entry => {
+            numResults++
             const {ObjectMeta, TypeMeta, ...rest } = entry
             obj.push({...ObjectMeta, ...TypeMeta, ...rest })
         })
