@@ -158,7 +158,7 @@
     <p>Fetching...</p>
 {:else if $qStore.error}
     <p>Error: {$qStore.error.message}</p>
-{:else if !$qStore.data}
+{:else if !$qStore.data["resources"]}
     <p>Empty dataset</p>
 {:else}
     <div class="scroll">
