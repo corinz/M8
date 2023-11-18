@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -126,11 +127,18 @@ func (c Client) getAllServerResources() {
 		if value.IsZero() {
 			continue
 		}
+		name = strings.ToLower(name)
 		switch name {
-		case "Deployment":
+		case "deployment":
 			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.Deployment)
-		case "DaemonSet":
+		case "daemonset":
 			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.DaemonSet)
+		case "replicaset":
+			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.ReplicaSet)
+		case "statefulset":
+			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.StatefulSet)
+		case "pod":
+			c.KnownTypesObjMap[name] = value.Interface().([]*corev1.Pod)
 		default:
 			log.Println("TODO: Unhandled GVK: ", gvk.Kind, gvk.Group, gvk.Version)
 		}
