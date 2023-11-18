@@ -4,7 +4,7 @@
     import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
     import {onMount} from 'svelte';
-    import {defaultFocus} from "./focus"
+    import {defaultFocus, focusedElement} from "./focus"
     import {queryStore, gql, getContextClient} from '@urql/svelte';
     import _ from 'underscore';
     import {apiResourcesQuery, resourcesQuery} from "./gqlQueries"
@@ -13,7 +13,7 @@
     // Defaults
     export let searchEventKey: string;
     let debug = false;
-    let searchBarInput: string = "Deployment"
+    let searchBarInput: string = "deployment" // TODO: if the first search is broken, others are broken too
     onMount(async () => search())
     const filterOptions = {
         keys: ['name', 'Name'],
@@ -42,6 +42,9 @@
     $: queryError = $qStore.error
     $: queryFetching = $qStore.fetching
 
+    // focus on searchbar if null, else defaultFocus
+    $: !tableObject ? focusedElement.set(document.getElementById("search")) : defaultFocus()
+
     if (debug) {
         client.subscribeToDebugTarget(event => {
             if (event.source === 'cacheExchange')
@@ -62,11 +65,6 @@
         }
         // Clear search bar and reset focus after search
         searchBarInput = ""
-
-        // defaultFocus if query was successful
-        if(!$qStore.data) {
-            defaultFocus()
-        }
     }
 
     function filter(): void {
@@ -94,6 +92,7 @@
         if (event.key === 'Enter') {
             // cancel debounce
             debouncedHandleInput.cancel()
+            event.preventDefault() // prevents "enter" action
             handleInput()
         }
     }
@@ -125,9 +124,6 @@
         />
         {numResults}
     </Paper>
-<!--    <div style="padding: 20px 0; color: red">-->
-<!--        {errorMessage}-->
-<!--    </div>-->
 </div>
 
 {#if queryFetching}
