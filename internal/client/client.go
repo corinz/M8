@@ -2,10 +2,8 @@ package client
 
 import (
 	"context"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
 	disc "k8s.io/client-go/discovery"
@@ -82,7 +80,6 @@ func NewClient(c connect.Connection) (*Client, error) {
 		KnownTypesMap:          scheme.Scheme.AllKnownTypes(),
 		KnownTypesObjMap:       make(map[string]any),
 	}
-	client.getAllServerResources()
 
 	return client, nil
 }
@@ -119,32 +116,6 @@ func newOpenAPIClient(client *disc.DiscoveryClient) (openapi.Resources, error) {
 	return openApiSchema, err
 }
 
-func (c Client) getAllServerResources() {
-	// TODO: make this faster and run on a timer to refresh
-	for _, gvk := range c.gvkMap {
-		name := gvk.Kind
-		value := c.ResourceByName(gvk, "")
-		if value.IsZero() {
-			continue
-		}
-		name = strings.ToLower(name)
-		switch name {
-		case "deployment":
-			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.Deployment)
-		case "daemonset":
-			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.DaemonSet)
-		case "replicaset":
-			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.ReplicaSet)
-		case "statefulset":
-			c.KnownTypesObjMap[name] = value.Interface().([]*appsv1.StatefulSet)
-		case "pod":
-			c.KnownTypesObjMap[name] = value.Interface().([]*corev1.Pod)
-		default:
-			log.Println("TODO: Unhandled GVK: ", gvk.Kind, gvk.Group, gvk.Version)
-		}
-	}
-}
-
 func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionResource, map[string]schema.GroupVersionKind, error) {
 	// TODO: handle errors
 	// Get all Groups & Versions from cluster
@@ -168,9 +139,9 @@ func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionR
 						Resource: resource.Name,
 					}
 					// If same group/kind exist with different version, default to higher version
-					_, gvrExists := gvrMap[resource.Kind]
+					_, gvrExists := gvrMap[strings.ToLower(resource.Kind)]
 					if !gvrExists {
-						gvrMap[resource.Kind] = gvr
+						gvrMap[strings.ToLower(resource.Kind)] = gvr
 					} else if ver.Version > gvr.Version { // TODO: else, use/replace with latest api
 						//m[resource.Kind] = gvr
 					}
@@ -181,9 +152,9 @@ func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionR
 						Kind:    resource.Kind,
 					}
 					// If same group/kind exist with different version, default to higher version
-					_, gvkExists := gvkMap[resource.Kind] // keyed with Kind name
+					_, gvkExists := gvkMap[strings.ToLower(resource.Kind)] // keyed with Kind name
 					if !gvkExists {
-						gvkMap[resource.Kind] = gvk
+						gvkMap[strings.ToLower(resource.Kind)] = gvk
 					} else if ver.Version > gvk.Version { // TODO: else, use/replace with latest api
 						//gvkMap[resource.Kind] = gvk
 					}
@@ -194,47 +165,6 @@ func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionR
 	return gvrMap, gvkMap, nil
 }
 
-// ResourceByName returns a reflection whose interface is an array of kube api objects
-func (c Client) ResourceByName(gvk schema.GroupVersionKind, namespace string) reflect.Value {
-	converter := runtime.DefaultUnstructuredConverter
-	gvr, _ := c.GvrFromName(gvk.Kind)
-
-	// Return nil if gvr or gvk not found
-	if gvr.Resource == "" {
-		log.Printf("nil gvr for %s\n", gvk.Kind)
-		return reflect.ValueOf(0)
-	}
-
-	// Reflect type of unstructured object with goal of
-	//  returning slice of typed object pointers
-	gvkType := c.KnownTypesMap[gvk]
-	if gvkType == nil {
-		log.Printf("gvk %s not in KnownTypesMap \n", gvk.Kind)
-		return reflect.ValueOf(0)
-	}
-	gvkSliceType := reflect.SliceOf(reflect.PtrTo(gvkType))
-	gvkSlice := reflect.MakeSlice(gvkSliceType, 0, 0)
-
-	// Range over unstructured objects
-	uList, _ := c.UnstructuredResourceListByGvr(context.TODO(), gvr, namespace)
-	for _, u := range uList {
-		// new instance of reflect type
-		gvkVal := reflect.New(gvkType)
-		gvkObj := gvkVal.Interface()
-
-		// Copy unstruc to typed gvkObj
-		err := converter.FromUnstructured(u.Object, gvkObj)
-		if err != nil {
-			log.Println(err)
-		}
-
-		// append type gvkObject to slice
-		gvkSlice = reflect.Append(gvkSlice, reflect.ValueOf(gvkObj))
-	}
-
-	return gvkSlice
-}
-
 // GvrFromName returns GVR from Resource Name
 func (c Client) GvrFromName(name string) (schema.GroupVersionResource, error) {
 	return c.gvrMap[name], nil
@@ -243,4 +173,22 @@ func (c Client) GvrFromName(name string) (schema.GroupVersionResource, error) {
 // GvkFromName returns GVR from Resource Name
 func (c Client) GvkFromName(name string) (schema.GroupVersionKind, error) {
 	return c.gvkMap[name], nil
+}
+
+func (c Client) GetResources(name string) (any, error) {
+	listOptions := metav1.ListOptions{}
+	name = strings.ToLower(name)
+
+	gvr, err := c.GvrFromName(name)
+	if err != nil {
+		log.Println("Bad resource name")
+	}
+	resource := c.dynamicClient.Resource(gvr)
+	unstruc, _ := resource.List(context.TODO(), listOptions)
+	var unstrucList = make([]map[string]interface{}, 0)
+	for _, v := range unstruc.Items {
+		unstrucList = append(unstrucList, v.Object)
+	}
+
+	return unstrucList, nil
 }

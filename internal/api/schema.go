@@ -7,18 +7,18 @@ import (
 import "m8/internal/cluster"
 
 func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
-	mapStringStringScalar := graphql.NewScalar(
+	mapStringAnyScalar := graphql.NewScalar(
 		graphql.ScalarConfig{
-			Name:        "Map",
-			Description: "Represents a map with string key/value pairs",
+			Name:        "MapStringAnyScalar",
+			Description: "Map of String Any",
 			Serialize: func(value interface{}) interface{} {
-				if keyValue, ok := value.(map[string]string); ok {
+				if keyValue, ok := value.(map[string]any); ok {
 					return keyValue
 				}
 				return nil
 			},
 			ParseValue: func(value interface{}) interface{} {
-				if keyValue, ok := value.(map[string]string); ok {
+				if keyValue, ok := value.(map[string]any); ok {
 					return keyValue
 				}
 				return nil
@@ -68,70 +68,61 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 		},
 	})
 
-	metaType := graphql.NewObject(graphql.ObjectConfig{
-		Name:        "Meta",
-		Description: "A Kubernetes Resource's Meta",
+	metadata := graphql.NewObject(graphql.ObjectConfig{
+		Name:        "metadata",
+		Description: "Resource metadata",
 		Fields: graphql.Fields{
-			"Kind": &graphql.Field{
+			"namespace": &graphql.Field{
 				Type:        graphql.String,
-				Name:        "Resource Kind",
-				Description: "Resource Kind",
-			},
-			"APIVersion": &graphql.Field{
-				Type:        graphql.String,
-				Name:        "Resource API Version",
-				Description: "Resource API Version",
-			},
-		},
-	})
-
-	objectMetaType := graphql.NewObject(graphql.ObjectConfig{
-		Name:        "ObjectMeta",
-		Description: "A Kubernetes Resource's Object Meta",
-		Fields: graphql.Fields{
-			"Name": &graphql.Field{
-				Type:        graphql.String,
-				Name:        "Resource Name",
-				Description: "Resource Name",
-			},
-			"Namespace": &graphql.Field{
-				Type:        graphql.String,
-				Name:        "Resource Namespace",
+				Name:        "namespace",
 				Description: "Resource Namespace",
 			},
-			"Labels": &graphql.Field{
-				Type:        mapStringStringScalar, //<--- issues with this
-				Name:        "Resource Labels",
+			"name": &graphql.Field{
+				Type:        graphql.String,
+				Name:        "name",
+				Description: "Resource Name",
+			},
+			"labels": &graphql.Field{
+				Type:        mapStringAnyScalar,
+				Name:        "labels",
 				Description: "Resource Labels",
 			},
-		},
-	})
-
-	_ = graphql.NewObject(graphql.ObjectConfig{
-		Name:        "Spec",
-		Description: "A Kubernetes Resource's Spec",
-		Fields: graphql.Fields{
-			"Replicas": &graphql.Field{
-				Type:        graphql.String,
-				Name:        "Replicas",
-				Description: "Replicas",
+			"annotations": &graphql.Field{
+				Type:        mapStringAnyScalar,
+				Name:        "annotations",
+				Description: "Resource Annotations",
 			},
 		},
 	})
 
-	resourceType := graphql.NewObject(graphql.ObjectConfig{
+	resource := graphql.NewObject(graphql.ObjectConfig{
 		Name:        "Resource",
-		Description: "A Kubernetes Resource",
+		Description: "Kubernetes Resource",
 		Fields: graphql.Fields{
-			"TypeMeta": &graphql.Field{
-				Type:        metaType,
-				Name:        "Resource Meta",
-				Description: "Resource Meta",
+			"metadata": &graphql.Field{
+				Type:        metadata,
+				Name:        "metadata",
+				Description: "Resource Metadata",
 			},
-			"ObjectMeta": &graphql.Field{
-				Type:        objectMetaType,
-				Name:        "Resource Object Meta",
-				Description: "Resource Object Meta",
+			"spec": &graphql.Field{
+				Type:        mapStringAnyScalar,
+				Name:        "spec",
+				Description: "Resource Spec",
+			},
+			"status": &graphql.Field{
+				Type:        mapStringAnyScalar,
+				Name:        "status",
+				Description: "Resource Status",
+			},
+			"kind": &graphql.Field{
+				Type:        graphql.String,
+				Name:        "kind",
+				Description: "Resource Kind",
+			},
+			"apiVersion": &graphql.Field{
+				Type:        graphql.String,
+				Name:        "apiVersion",
+				Description: "Resource API Version",
 			},
 		},
 	})
@@ -164,9 +155,9 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 				},
 			},
 			"resources": &graphql.Field{
-				Type:        graphql.NewList(resourceType),
+				Type:        graphql.NewList(resource),
 				Description: "Kubernetes Resources",
-				Name:        "Kubernetes Resources",
+				Name:        "Resource",
 				Args: graphql.FieldConfigArgument{
 					"name": &graphql.ArgumentConfig{
 						Type: graphql.String,
@@ -174,7 +165,7 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					name, _ := p.Args["name"].(string)
-					return c.KnownTypesObjMap[name], nil
+					return c.GetResources(name)
 				},
 			},
 		},
