@@ -8,12 +8,14 @@ export const apiResourcesQuery = gql`query RootQuery {
               ShortNames
             }}}`
 export const resourcesQuery = gql`query RootQuery($name: String) {
-          resources(name: $name) {
-            ObjectMeta {
-              Name
-              Namespace
-            }
-            TypeMeta {
-              APIVersion
-              Kind
-            }}}`
+  resources(name: $name) {
+    kind
+    apiVersion
+    metadata {
+      namespace
+      name
+      labels
+      annotations
+    }
+  }
+}`

@@ -21,7 +21,7 @@
     }
 
     // debounce
-    $: debounceDelay = searchEventKey === '/' ? 150 : 850
+    $: debounceDelay = searchEventKey === '/' ? 600 : 850
     $: debouncedHandleInput = _.debounce(handleInput, debounceDelay)
 
     // Graphql Client and queries
@@ -37,7 +37,15 @@
     // query store and tables
     let filteredTableObject = null
     $: unfilteredTableObject = $qStore.data != null ? $qStore.data["resources"] : []
-    $: tableObject = filteredTableObject ?? unfilteredTableObject
+    $: unfilteredTableObjectFlattened = Object.entries(unfilteredTableObject).map(([i, v]) => ({
+        "name": v.metadata.name,
+        "namespace": v.metadata.namespace,
+        "kind": v.kind,
+        "apiVersion": v.apiVersion,
+        "labels": v.metadata.labels,
+        "annotations": v.metadata.annotations
+    }));
+    $: tableObject = filteredTableObject ?? unfilteredTableObjectFlattened
     $: numResults = tableObject == null ? 0 : tableObject.length
     $: queryError = $qStore.error
     $: queryFetching = $qStore.fetching
@@ -71,7 +79,7 @@
         if (searchBarInput == "") {
             filteredTableObject = null
         } else {
-            const fuse = new Fuse(flattenResourceObj(unfilteredTableObject), filterOptions)
+            const fuse = new Fuse(flattenResourceObj(unfilteredTableObjectFlattened), filterOptions)
             let filteredTableObjectMap = fuse.search(searchBarInput)
             filteredTableObject = filteredTableObjectMap.map((idx) => idx.item)
         }
