@@ -5,10 +5,23 @@
     import Fuse from 'fuse.js'
     import {onMount} from 'svelte';
     import {defaultFocus, focusedElement} from "./focus"
-    import {queryStore, gql, getContextClient} from '@urql/svelte';
+    import {queryStore, getContextClient, gql} from '@urql/svelte';
     import _ from 'underscore';
-    import {apiResourcesQuery, resourcesQuery} from "./gqlQueries"
     import {flattenResourceObj} from "./utils"
+    import {GqlResourceQuery} from "./resourceQuery.ts"
+
+    const resourceQuery = gql`query RootQuery($name: String) {
+      resources(name: $name) {
+        kind
+        apiVersion
+        metadata {
+          namespace
+          name
+          labels
+          annotations
+        }
+      }
+    }`
 
     // Defaults
     export let searchEventKey: string;
@@ -26,29 +39,19 @@
 
     // Graphql Client and queries
     const client = getContextClient()
-    let query = apiResourcesQuery
-    let queryVars = {}
-    $: qStore = queryStore({
-        client,
-        query,
-        variables: queryVars
-    })
+    let query = resourceQuery
+    let queryVars = {} // TODO: should be populated with something by default to prevent first gql client search being empty
+
+    let getResources = new GqlResourceQuery
+    $: resourcesQStore = getResources.executeQuery(queryVars)
+    $: resourcesData = $resourcesQStore.data ? getResources.transform($resourcesQStore.data) : {}
 
     // query store and tables
     let filteredTableObject = null
-    $: unfilteredTableObject = $qStore.data != null ? $qStore.data["resources"] : []
-    $: unfilteredTableObjectFlattened = Object.entries(unfilteredTableObject).map(([i, v]) => ({
-        "name": v.metadata.name,
-        "namespace": v.metadata.namespace,
-        "kind": v.kind,
-        "apiVersion": v.apiVersion,
-        "labels": v.metadata.labels,
-        "annotations": v.metadata.annotations
-    }));
-    $: tableObject = filteredTableObject ?? unfilteredTableObjectFlattened
+    $: tableObject = filteredTableObject ?? resourcesData
     $: numResults = tableObject == null ? 0 : tableObject.length
-    $: queryError = $qStore.error
-    $: queryFetching = $qStore.fetching
+    $: queryError = $resourcesQStore.error
+    $: queryFetching = $resourcesQStore.fetching
 
     // focus on searchbar if null, else defaultFocus
     $: !tableObject ? focusedElement.set(document.getElementById("search")) : defaultFocus()
@@ -63,13 +66,10 @@
 
     function search(): void {
         // Don't search blank input
-        if (searchBarInput === "apis") {
-            query = apiResourcesQuery
-            queryVars = {}
-        } else if (searchBarInput !== "") {
+        if (searchBarInput !== "") {
             const name = searchBarInput
             queryVars = {name}
-            query = resourcesQuery
+            query = resourceQuery
         }
         // Clear search bar and reset focus after search
         searchBarInput = ""
@@ -79,7 +79,7 @@
         if (searchBarInput == "") {
             filteredTableObject = null
         } else {
-            const fuse = new Fuse(flattenResourceObj(unfilteredTableObjectFlattened), filterOptions)
+            const fuse = new Fuse(flattenResourceObj(resourcesData), filterOptions)
             let filteredTableObjectMap = fuse.search(searchBarInput)
             filteredTableObject = filteredTableObjectMap.map((idx) => idx.item)
         }
