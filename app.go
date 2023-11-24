@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
 	"github.com/rs/cors"
@@ -27,21 +26,21 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
-	configContext := flag.String("configContext", "", "Kube config context name")
-	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
-
-	a.cluster = cluster.NewCluster(*apiUrl, *configContext, *configPath)
+	//configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
+	//configContext := flag.String("configContext", "", "Kube config context name")
+	//apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
+	// TODO: get cmd line flags
+	a.cluster = cluster.NewCluster("", "", "")
 	graphqlStartup(a.cluster, true)
 }
 
 // startup is called when from main() when -headless=true
 func headlessStartup() {
-	configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
-	configContext := flag.String("configContext", "", "Kube config context name")
-	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
-
-	c := cluster.NewCluster(*apiUrl, *configContext, *configPath)
+	//configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
+	//configContext := flag.String("configContext", "", "Kube config context name")
+	//apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
+	// TODO: get cmd line flags
+	c := cluster.NewCluster("", "", "")
 	graphqlStartup(c, true)
 }
 
