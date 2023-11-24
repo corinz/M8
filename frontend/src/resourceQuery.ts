@@ -1,12 +1,10 @@
 import type {AnyVariables, OperationResult, OperationResultStore, TypedDocumentNode} from "@urql/svelte";
+import type {tableObject} from "./jsonTable";
 import {Client, getContextClient, gql, queryStore} from "@urql/svelte";
+import {BaseQuery} from "./gqlQuery";
 
-// TODO move to table component, describe what is required of table here to work with table logic
-interface tableObject {
-    // TODO
-}
-
-class resourceObject {
+// resourceClass represent the structure of the graphql resource object
+class resourceClass {
     apiVersion: string
     kind: string
     metadata: {
@@ -21,17 +19,7 @@ class resourceObject {
     }
 }
 
-// TODO move to gqlQuery.ts
-interface gqlQueryInterface {
-    readonly query: TypedDocumentNode<any, AnyVariables>
-    client: Client
-
-    transform(object: OperationResult): tableObject
-    executeQuery(variables: any): any
-}
-
-export class GqlResourceQuery implements gqlQueryInterface {
-    client: Client
+export class GqlResourceQuery extends BaseQuery {
     query: TypedDocumentNode<any, AnyVariables> = gql`query RootQuery($name: String) {
         resources(name: $name) {
             kind
@@ -43,15 +31,10 @@ export class GqlResourceQuery implements gqlQueryInterface {
                 annotations
         }}}`
 
-    constructor() {
-        this.client = getContextClient()
-    }
-
     transform(resultObj: OperationResult): tableObject {
         let obj = resultObj["resources"]
         return Object.entries(obj).map(([i, v]) => {
-            console.log(v)
-            const vv = v as resourceObject
+            const vv = v as resourceClass
             // TODO https://basarat.gitbook.io/typescript/future-javascript/destructuring
             return {
                 "name": vv.metadata.name,
@@ -61,14 +44,6 @@ export class GqlResourceQuery implements gqlQueryInterface {
                 "labels": vv.metadata.labels,
                 "annotations": vv.metadata.annotations
             }
-        })
-    }
-
-    executeQuery(variables: any) {
-        return queryStore({
-            client: this.client,
-            query: this.query,
-            variables
         })
     }
 }
