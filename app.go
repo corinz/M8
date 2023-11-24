@@ -6,7 +6,6 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
 	"github.com/rs/cors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"m8/internal/api"
 	"m8/internal/cluster"
@@ -101,9 +100,4 @@ func graphqlStartup(cluster *cluster.Cluster, apollo bool) {
 			println("Error:", err.Error())
 		}
 	}
-}
-
-// AppGetApiResource for Wails type binding
-func (a *App) AppGetApiResource() v1.APIResource {
-	return v1.APIResource{}
 }
