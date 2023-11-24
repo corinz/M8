@@ -25,7 +25,7 @@
     let queryVars = {} // TODO: should be populated with something by default to prevent first gql client search being empty
     let getResources = new GqlResourceQuery
     $: resourcesQStore = getResources.executeQuery(queryVars)
-    $: resourcesData = $resourcesQStore.data ? getResources.transform($resourcesQStore.data) : {}
+    $: resourcesData = $resourcesQStore.data ? getResources.transform($resourcesQStore.data) : null
     $: queryError = $resourcesQStore.error
     $: queryFetching = $resourcesQStore.fetching
 
