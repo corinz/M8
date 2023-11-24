@@ -71,7 +71,7 @@ func graphqlStartup(clusters map[string]*cluster.Cluster, apollo bool) {
 			gqlErr := gqlerrors.FormattedError{
 				Message: err.Error(),
 			}
-			log.Errorln("GraphQL Error: ", err)
+			log.Warnln("GraphQL Error: ", err)
 			return gqlErr
 		},
 	})
