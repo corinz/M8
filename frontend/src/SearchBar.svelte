@@ -5,71 +5,42 @@
     import Fuse from 'fuse.js'
     import {onMount} from 'svelte';
     import {defaultFocus, focusedElement} from "./focus"
-    import {queryStore, getContextClient, gql} from '@urql/svelte';
     import _ from 'underscore';
     import {flattenResourceObj} from "./utils"
     import {GqlResourceQuery} from "./resourceQuery.ts"
 
-    const resourceQuery = gql`query RootQuery($name: String) {
-      resources(name: $name) {
-        kind
-        apiVersion
-        metadata {
-          namespace
-          name
-          labels
-          annotations
-        }
-      }
-    }`
-
-    // Defaults
+    // search and filter
     export let searchEventKey: string;
-    let debug = false;
     let searchBarInput: string = "deployment" // TODO: if the first search is broken, others are broken too
-    onMount(async () => search())
+    let placeholder
     const filterOptions = {
-        keys: ['name', 'Name'],
+        keys: ['name', 'Name', 'namespace', 'Namespace'],
         threshold: 0.40 // 0 = perfect match, 1 = indiscriminate
     }
-
-    // debounce
+    onMount(async () => search())
     $: debounceDelay = searchEventKey === '/' ? 600 : 850
     $: debouncedHandleInput = _.debounce(handleInput, debounceDelay)
 
-    // Graphql Client and queries
-    const client = getContextClient()
-    let query = resourceQuery
+    // Graphql
     let queryVars = {} // TODO: should be populated with something by default to prevent first gql client search being empty
-
     let getResources = new GqlResourceQuery
     $: resourcesQStore = getResources.executeQuery(queryVars)
     $: resourcesData = $resourcesQStore.data ? getResources.transform($resourcesQStore.data) : {}
-
-    // query store and tables
-    let filteredTableObject = null
-    $: tableObject = filteredTableObject ?? resourcesData
-    $: numResults = tableObject == null ? 0 : tableObject.length
     $: queryError = $resourcesQStore.error
     $: queryFetching = $resourcesQStore.fetching
 
-    // focus on searchbar if null, else defaultFocus
-    $: !tableObject ? focusedElement.set(document.getElementById("search")) : defaultFocus()
-
-    if (debug) {
-        client.subscribeToDebugTarget(event => {
-            if (event.source === 'cacheExchange')
-                return;
-            console.log("GQL: ", event);
-        });
-    }
+    // table
+    let filteredTableObject = null
+    $: tableObject = filteredTableObject ?? resourcesData
+    $: numResults = tableObject == null ? 0 : tableObject.length
+    // default focus if table is populated, else searchbar
+    $: tableObject ? defaultFocus() : focusedElement.set(document.getElementById("search"))
 
     function search(): void {
         // Don't search blank input
         if (searchBarInput !== "") {
             const name = searchBarInput
             queryVars = {name}
-            query = resourceQuery
         }
         // Clear search bar and reset focus after search
         searchBarInput = ""
@@ -105,7 +76,6 @@
         }
     }
 
-    let placeholder
     $: switch (searchEventKey) {
         case "/":
             placeholder = "filter"
@@ -142,7 +112,7 @@
     <p>Empty dataset</p>
 {:else}
     <div class="scroll">
-        <JsonTable data={flattenResourceObj(tableObject)}/>
+        <JsonTable data={tableObject}/>
     </div>
 {/if}
 
