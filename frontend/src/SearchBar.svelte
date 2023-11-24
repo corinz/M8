@@ -24,7 +24,10 @@
     // Graphql
     let queryVars = {} // TODO: should be populated with something by default to prevent first gql client search being empty
     let getResources = new GqlResourceQuery
-    $: resourcesQStore = getResources.executeQuery(queryVars)
+    // TODO: add contexts check boxes or hotkeys
+    $: resourcesQStore = getResources.executeQuery(["kind-kind", "kind-secondary"], {...queryVars, ...{"kind_kind": "kind-kind",
+        "kind_secondary": "kind-secondary"
+    }})
     $: resourcesData = $resourcesQStore.data ? getResources.transform($resourcesQStore.data) : null
     $: queryError = $resourcesQStore.error
     $: queryFetching = $resourcesQStore.fetching
