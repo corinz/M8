@@ -5,49 +5,63 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
 	"github.com/rs/cors"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"m8/internal/api"
 	"m8/internal/cluster"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 // App struct
 type App struct {
-	ctx     context.Context
-	cluster *cluster.Cluster
+	ctx      context.Context
+	clusters map[string]*cluster.Cluster
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-	return &App{}
+	clusters := make(map[string]*cluster.Cluster)
+	return &App{
+		clusters: clusters,
+	}
 }
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	//configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
-	//configContext := flag.String("configContext", "", "Kube config context name")
-	//apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
-	// TODO: get cmd line flags
-	a.cluster = cluster.NewCluster("", "", "")
-	graphqlStartup(a.cluster, true)
+	// TODO: replace with config discovery module
+	home, exists := os.LookupEnv("HOME")
+	if !exists {
+		home = "/root"
+	}
+	path := filepath.Join(home, ".kube", "Config")
+
+	a.clusters["kind-kind"] = cluster.NewCluster("kind-kind", path)
+	a.clusters["kind-secondary"] = cluster.NewCluster("kind-secondary", path)
+
+	graphqlStartup(a.clusters, true)
 }
 
 // startup is called when from main() when -headless=true
 func headlessStartup() {
-	//configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
-	//configContext := flag.String("configContext", "", "Kube config context name")
-	//apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
-	// TODO: get cmd line flags
-	c := cluster.NewCluster("", "", "")
-	graphqlStartup(c, true)
+	// TODO: replace with config discovery module
+	home, exists := os.LookupEnv("HOME")
+	if !exists {
+		home = "/root"
+	}
+	path := filepath.Join(home, ".kube", "Config")
+	clusters := make(map[string]*cluster.Cluster)
+	clusters["kind-kind"] = cluster.NewCluster("kind-kind", path)
+	clusters["kind-secondary"] = cluster.NewCluster("kind-secondary", path)
+	graphqlStartup(clusters, true)
 }
 
-func graphqlStartup(cluster *cluster.Cluster, apollo bool) {
-	schema, err := api.BuildSchema(cluster)
+func graphqlStartup(clusters map[string]*cluster.Cluster, apollo bool) {
+	schema, err := api.BuildSchema(clusters)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	graphqlHandler := handler.New(&handler.Config{
 		Schema:   &schema,
@@ -57,7 +71,7 @@ func graphqlStartup(cluster *cluster.Cluster, apollo bool) {
 			gqlErr := gqlerrors.FormattedError{
 				Message: err.Error(),
 			}
-			log.Println("GraphQL Error: ", err)
+			log.Errorln("GraphQL Error: ", err)
 			return gqlErr
 		},
 	})

@@ -10,8 +10,8 @@ type Cluster struct {
 	*client.Client
 }
 
-func NewCluster(apiUrl string, configContext string, configPath string) *Cluster {
-	conn := connect.NewConnection(apiUrl, configContext, configPath)
+func NewCluster(configContext string, configPath string) *Cluster {
+	conn := connect.NewConnection(configContext, configPath)
 	cl, _ := client.NewClient(conn)
 
 	return &Cluster{

@@ -40,7 +40,7 @@
         // Don't search blank input
         if (searchBarInput !== "") {
             const name = searchBarInput
-            queryVars = {name}
+            queryVars = {name, "clusterContext": "kind-kind"}
         }
         // Clear search bar and reset focus after search
         searchBarInput = ""

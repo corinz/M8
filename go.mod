@@ -6,6 +6,7 @@ require (
 	github.com/graphql-go/graphql v0.8.1
 	github.com/graphql-go/handler v0.2.3
 	github.com/rs/cors v1.10.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/wailsapp/wails/v2 v2.5.1
 	k8s.io/apimachinery v0.28.2
 	k8s.io/client-go v0.28.2

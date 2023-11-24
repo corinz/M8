@@ -20,16 +20,18 @@ class resourceClass {
 }
 
 export class GqlResourceQuery extends BaseQuery {
-    query: TypedDocumentNode<any, AnyVariables> = gql`query RootQuery($name: String) {
-        resources(name: $name) {
-            kind
-            apiVersion
-            metadata {
-                namespace
-                name
-                labels
-                annotations
-        }}}`
+    query: TypedDocumentNode<any, AnyVariables> = gql`query RootQuery($clusterContext: String, $name: String) {
+      resources(clusterContext: $clusterContext, name: $name) {
+        apiVersion
+        kind
+        metadata {
+          annotations
+          labels
+          name
+          namespace
+        }
+      }
+    }`
 
     transform(resultObj: OperationResult): tableObject {
         let obj = resultObj["resources"]
