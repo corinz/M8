@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -9,8 +10,6 @@ import (
 	disc "k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/kubectl/pkg/util/openapi"
-	"log"
 	"m8/internal/connect"
 	"reflect"
 	"strings"
@@ -24,7 +23,6 @@ type Client struct {
 	gvkMap                 map[string]schema.GroupVersionKind
 	discoveryClient        *disc.DiscoveryClient
 	dynamicClient          *dynamic.DynamicClient
-	openApiSchema          openapi.Resources
 	KnownTypesMap          map[schema.GroupVersionKind]reflect.Type
 	KnownTypesObjMap       map[string]any
 }
@@ -32,22 +30,22 @@ type Client struct {
 func NewClient(c connect.Connection) (*Client, error) {
 	disClient, err := newDiscovery(c)
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 	}
 
 	dynClient, err := newDynamic(c)
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 	}
 
 	ver, err := disClient.ServerVersion()
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 	}
 
 	PreferredResourcesList, err := disClient.ServerPreferredResources()
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 	}
 	PreferredResourcesMap := make(map[string]v1.APIResource)
 	for _, apiResourceList := range PreferredResourcesList {
@@ -60,12 +58,7 @@ func NewClient(c connect.Connection) (*Client, error) {
 
 	gvrMap, gvkMap, err := allResources(disClient)
 	if err != nil {
-		log.Println(err)
-	}
-
-	openApiSchema, err := newOpenAPIClient(disClient)
-	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 	}
 
 	client := &Client{
@@ -76,7 +69,6 @@ func NewClient(c connect.Connection) (*Client, error) {
 		gvkMap:                 gvkMap,
 		discoveryClient:        disClient,
 		dynamicClient:          dynClient,
-		openApiSchema:          openApiSchema,
 		KnownTypesMap:          scheme.Scheme.AllKnownTypes(),
 		KnownTypesObjMap:       make(map[string]any),
 	}
@@ -87,33 +79,19 @@ func NewClient(c connect.Connection) (*Client, error) {
 // NewDiscovery creates a client discoveryClient and obtains server version and list of
 func newDiscovery(c connect.Connection) (*disc.DiscoveryClient, error) {
 	var err error
-
-	// TODO return error
 	client, err := disc.NewDiscoveryClientForConfig(c.Config)
 	if err != nil {
-		log.Println(err)
+		log.Errorln(err)
 	}
-
 	return client, err
 }
 
 func newDynamic(c connect.Connection) (*dynamic.DynamicClient, error) {
 	dynClient, err := dynamic.NewForConfig(c.Config)
 	if err != nil {
-		log.Println(err)
-		log.Fatalln("Failed to create Dynamic Kubernetes Client")
+		log.Fatalln("Failed to create Dynamic Kubernetes Client.", err)
 	}
 	return dynClient, err
-}
-
-func newOpenAPIClient(client *disc.DiscoveryClient) (openapi.Resources, error) {
-	parser := openapi.NewOpenAPIParser(client)
-	openApiSchema, err := parser.Parse()
-	if err != nil {
-		log.Println(err)
-	}
-
-	return openApiSchema, err
 }
 
 func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionResource, map[string]schema.GroupVersionKind, error) {
@@ -181,7 +159,7 @@ func (c Client) GetResources(name string) (any, error) {
 
 	gvr, err := c.GvrFromName(name)
 	if err != nil {
-		log.Println("Bad resource name")
+		log.Warnln("Bad resource name")
 	}
 	resource := c.dynamicClient.Resource(gvr)
 	unstruc, _ := resource.List(context.TODO(), listOptions)

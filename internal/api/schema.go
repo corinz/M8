@@ -3,10 +3,10 @@ package api
 import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
+	"m8/internal/cluster"
 )
-import "m8/internal/cluster"
 
-func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
+func BuildSchema(clusters map[string]*cluster.Cluster, contexts []string) (graphql.Schema, error) {
 	mapStringAnyScalar := graphql.NewScalar(
 		graphql.ScalarConfig{
 			Name:        "MapStringAnyScalar",
@@ -130,28 +130,18 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 	rootQuery := graphql.NewObject(graphql.ObjectConfig{
 		Name: "RootQuery",
 		Fields: graphql.Fields{
-			"apiResource": &graphql.Field{
-				Type:        apiResourceType,
-				Description: "API",
-				Name:        "API Resource",
-				Args: graphql.FieldConfigArgument{
-					"name": &graphql.ArgumentConfig{
-						Type: graphql.String,
-					},
-				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					name, _ := p.Args["name"].(string)
-					// TODO type check second return val
-					resource, _ := c.PreferredResourcesMap[name]
-					return resource, nil
-				},
-			},
 			"apiResources": &graphql.Field{
 				Type:        graphql.NewList(apiResourceListType),
 				Description: "List of API ResourcesPreferred",
 				Name:        "API ResourcesPreferred",
+				Args: graphql.FieldConfigArgument{
+					"clusterContext": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return c.PreferredResourcesList, nil
+					clusterCtx := p.Args["clusterContext"].(string)
+					return clusters[clusterCtx].PreferredResourcesList, nil
 				},
 			},
 			"resources": &graphql.Field{
@@ -159,13 +149,25 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 				Description: "Kubernetes Resources",
 				Name:        "Resource",
 				Args: graphql.FieldConfigArgument{
+					"clusterContext": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
 					"name": &graphql.ArgumentConfig{
 						Type: graphql.String,
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					name, _ := p.Args["name"].(string)
-					return c.GetResources(name)
+					name := p.Args["name"].(string)
+					clusterCtx := p.Args["clusterContext"].(string)
+					return clusters[clusterCtx].GetResources(name)
+				},
+			},
+			"contexts": &graphql.Field{
+				Type:        graphql.NewList(graphql.String),
+				Description: "Kubernetes Contexts",
+				Name:        "Contexts",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return contexts, nil
 				},
 			},
 		},

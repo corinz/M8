@@ -3,17 +3,16 @@ package main
 import (
 	"embed"
 	"flag"
+	log "github.com/sirupsen/logrus"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"log"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-
 	headless := flag.Bool("headless", false, "Run in backend only")
 	flag.Parse()
 
@@ -40,7 +39,7 @@ func main() {
 			println("Error:", err.Error())
 		}
 	} else {
-		log.Println("Running in headless mode")
+		log.Infoln("Running in headless mode")
 		headlessStartup()
 	}
 }

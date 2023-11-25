@@ -3,38 +3,55 @@
     import Paper from '@smui/paper';
     import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
-    import {onMount} from 'svelte';
     import {defaultFocus, focusedElement} from "./focus"
     import _ from 'underscore';
-    import {flattenResourceObj} from "./utils"
     import {GqlResourceQuery} from "./resourceQuery.ts"
+    import {activeContextStore, allContextStore} from "./activeContextStore";
 
-    // search and filter
-    export let searchEventKey: string;
-    let searchBarInput: string = "deployment" // TODO: if the first search is broken, others are broken too
+    // search and filter and ui
+    export let searchEventKey: string
+    let searchBarInput: string = "" // TODO: if the first search is broken, others are broken too
     let placeholder
     const filterOptions = {
         keys: ['name', 'Name', 'namespace', 'Namespace'],
         threshold: 0.40 // 0 = perfect match, 1 = indiscriminate
     }
-    onMount(async () => search())
     $: debounceDelay = searchEventKey === '/' ? 600 : 850
     $: debouncedHandleInput = _.debounce(handleInput, debounceDelay)
+    $: tableObject ? defaultFocus() : focusedElement.set(document.getElementById("search"))
 
     // Graphql
-    let queryVars = {} // TODO: should be populated with something by default to prevent first gql client search being empty
+    let queryVars = {"name": "pod"}
     let getResources = new GqlResourceQuery
-    $: resourcesQStore = getResources.executeQuery(queryVars)
-    $: resourcesData = $resourcesQStore.data ? getResources.transform($resourcesQStore.data) : null
-    $: queryError = $resourcesQStore.error
-    $: queryFetching = $resourcesQStore.fetching
-
-    // table
     let filteredTableObject = null
-    $: tableObject = filteredTableObject ?? resourcesData
+
+    // display logic
+    let resourceQStore, tableObject, queryError, queryFetching, activeContextsArr
     $: numResults = tableObject == null ? 0 : tableObject.length
-    // default focus if table is populated, else searchbar
-    $: tableObject ? defaultFocus() : focusedElement.set(document.getElementById("search"))
+    $: if ($activeContextStore) {
+        // Convert array (map is used by Legend.svelte for ease)
+        activeContextsArr = [...$activeContextStore.keys()]
+        if (activeContextsArr.length > 0) {
+            resourceQStore = getResources.executeQuery(activeContextsArr, queryVars)
+
+            // update the UI w/ proper messaging
+            queryFetching = $resourceQStore.fetching
+            queryError = $resourceQStore.error
+
+            if (queryError) {
+                console.log(queryError.message)
+            } else if (filteredTableObject) { // filter takes precedence
+                tableObject = filteredTableObject
+            } else {
+                // resourceQStore is not guaranteed to have completed here
+                tableObject = $resourceQStore.data ? getResources.transform($resourceQStore.data) : null
+            }
+        } else { //display contexts
+            tableObject = $allContextStore ? $allContextStore.map(r => {
+                return {"Available Contexts": r}
+            }) : [{"": "Fetching..."}]
+        }
+    }
 
     function search(): void {
         // Don't search blank input
@@ -50,7 +67,7 @@
         if (searchBarInput == "") {
             filteredTableObject = null
         } else {
-            const fuse = new Fuse(flattenResourceObj(resourcesData), filterOptions)
+            const fuse = new Fuse(tableObject, filterOptions)
             let filteredTableObjectMap = fuse.search(searchBarInput)
             filteredTableObject = filteredTableObjectMap.map((idx) => idx.item)
         }

@@ -1,6 +1,5 @@
 import type {AnyVariables, OperationResult, OperationResultStore, TypedDocumentNode} from "@urql/svelte";
 import type {tableObject} from "./jsonTable";
-import {Client, getContextClient, gql, queryStore} from "@urql/svelte";
 import {BaseQuery} from "./gqlQuery";
 
 // resourceClass represent the structure of the graphql resource object
@@ -20,30 +19,38 @@ class resourceClass {
 }
 
 export class GqlResourceQuery extends BaseQuery {
-    query: TypedDocumentNode<any, AnyVariables> = gql`query RootQuery($name: String) {
-        resources(name: $name) {
-            kind
-            apiVersion
-            metadata {
-                namespace
-                name
-                labels
-                annotations
-        }}}`
+    enableTemplating = true
+    rootQueryString = `query RootQuery($name: String) {\n`
+    bodyQueryString = `PARAM-PLACEHOLDER: resources(clusterContext: "CONTEXT-PLACEHOLDER", name: $name) {
+        apiVersion
+        kind
+        metadata {
+          annotations
+          labels
+          name
+          namespace
+        }
+      }\n`
+    footerQueryString = `}`
 
     transform(resultObj: OperationResult): tableObject {
-        let obj = resultObj["resources"]
-        return Object.entries(obj).map(([i, v]) => {
-            const vv = v as resourceClass
-            // TODO https://basarat.gitbook.io/typescript/future-javascript/destructuring
-            return {
-                "name": vv.metadata.name,
-                "namespace": vv.metadata.namespace,
-                "kind": vv.kind,
-                "apiVersion": vv.apiVersion,
-                "labels": vv.metadata.labels,
-                "annotations": vv.metadata.annotations
-            }
+        let obj = []
+        Object.entries(resultObj).map(([i, v]) => { // loop over context objects
+            Object.entries(v).map(([ii, vv]) => { // loop over resource objects
+                    const r = vv as resourceClass
+                    // TODO https://basarat.gitbook.io/typescript/future-javascript/destructuring
+                    obj.push({
+                        "cluster": i,
+                        "name": r.metadata.name,
+                        "namespace": r.metadata.namespace,
+                        "kind": r.kind,
+                        "apiVersion": r.apiVersion,
+                        "labels": r.metadata.labels,
+                        "annotations": r.metadata.annotations
+                    })
+                }
+            )
         })
+        return obj
     }
 }

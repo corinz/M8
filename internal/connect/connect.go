@@ -1,13 +1,37 @@
 package connect
 
 import (
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"log"
-	"os"
-	"path/filepath"
 )
+
+type ConfigFile struct {
+	Context string `json:"context"`
+	Path    string `json:"path"`
+}
+
+type Connection struct {
+	ConfigFile
+	Config    *rest.Config
+	ClientSet *kubernetes.Clientset
+}
+
+func NewConnection(context string, path string) Connection {
+	configFile := ConfigFile{
+		Context: context,
+		Path:    path,
+	}
+	conn := Connection{
+		ConfigFile: configFile,
+		Config:     nil,
+		ClientSet:  nil,
+	}
+	conn.Connect()
+
+	return conn
+}
 
 func (c *Connection) Connect() {
 	c.establish()
@@ -17,73 +41,51 @@ func (c *Connection) Connect() {
 func (c *Connection) newClientSet() {
 	cs, err := kubernetes.NewForConfig(c.Config)
 	if err != nil {
-		log.Println(err)
-		log.Fatalln("Failed to create Kubernetes Client Set")
+		log.Fatalln("Failed to create Kubernetes Client Set.", err)
 	}
 	c.ClientSet = cs
 }
 
 func (c *Connection) establish() {
 	// Establish Connection precedence
-	// #1 URL
-	// #2 Config File
-	// #3 Local Connection
+	// #1 Config File
+	// #2 Local Connection
 	var cfg *rest.Config
 	var err error
 
-	cfg, err = c.establishUrl() // #1
+	cfg, err = c.establishConfig() // #1
 	if err != nil {
-		cfg, err = c.establishConfig() // #2
+		err = nil
+		cfg, err = c.establishLocal() // #2
 		if err != nil {
-			cfg, err = c.establishLocal() // #3
+			log.Fatalln("Failed to establish Connection to Kubernetes API.", err)
 		}
 	}
-	if err != nil {
-		log.Println(err)
-		log.Fatalln("Failed to establish Connection to Kubernetes API")
-	} else {
-		c.Established = true
-		c.Config = cfg
-	}
+
+	c.Config = cfg
 }
 
-func (c *Connection) establishUrl() (*rest.Config, error) {
-	config, err := clientcmd.BuildConfigFromFlags(c.ApiUrl, "")
-	if err != nil {
-		log.Println("Failed to establish connection by API URL: ", err)
-	} else {
-		log.Println("Successfully established connection via API URL")
-	}
-	return config, err
-}
-
+// establishConfig creates a connection to the kube API using the config file and context provided
+// if no context is provided e.g. "", it will default to the "current-context"
 func (c *Connection) establishConfig() (*rest.Config, error) {
-	home, exists := os.LookupEnv("HOME")
-	if !exists {
-		home = "/root"
-	}
-	var configPath string
-	if c.ConfigFile.Path != "" {
-		configPath = c.ConfigFile.Path
-	} else {
-		configPath = filepath.Join(home, ".kube", "Config")
-	}
-	// TODO: pass context override
-	config, err := clientcmd.BuildConfigFromFlags("", configPath)
+	clientConfig := &clientcmd.ClientConfigLoadingRules{ExplicitPath: c.Path}
+	clientConfigOverrides := &clientcmd.ConfigOverrides{CurrentContext: c.Context}
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(clientConfig, clientConfigOverrides).ClientConfig()
 	if err != nil {
-		log.Println("Failed to establish connection via Kube Config file: ", err)
+		log.Warnf("Failed to establish connection to context: \"%s\" via Kube Config file. %s", c.Context, err)
 	} else {
-		log.Println("Successfully established connection via Kube Config file")
+		log.Infof("Successfully established connection to context: \"%s\" via Kube Config file.", c.Context)
 	}
 	return config, err
 }
 
+// establishLocal is used as a backup connection method for in-cluster deployments of this app
 func (c *Connection) establishLocal() (*rest.Config, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Println("Failed to establish connection via local method: ", err)
+		log.Warn("Failed to establish connection via local method.", err)
 	} else {
-		log.Println("Successfully established connection via local method")
+		log.Info("Successfully established connection via local method.")
 	}
 	return config, err
 }
