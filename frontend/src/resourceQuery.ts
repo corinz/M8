@@ -1,6 +1,5 @@
 import type {AnyVariables, OperationResult, OperationResultStore, TypedDocumentNode} from "@urql/svelte";
 import type {tableObject} from "./jsonTable";
-import {Client, getContextClient, gql, queryStore} from "@urql/svelte";
 import {BaseQuery} from "./gqlQuery";
 
 // resourceClass represent the structure of the graphql resource object
@@ -20,9 +19,9 @@ class resourceClass {
 }
 
 export class GqlResourceQuery extends BaseQuery {
-    // `query RootQuery($clusterContext: String, $name: String) {
-    rootQueryString: string = `query RootQuery($name: String, CONTEXT-TYPE-PLACEHOLDER) {\n`
-    bodyQueryString: string = `CONTEXT-PLACEHOLDER: resources(clusterContext: $CONTEXT-PLACEHOLDER, name: $name) {
+    enableTemplating = true
+    rootQueryString = `query RootQuery($name: String, CONTEXT-TYPE-PLACEHOLDER) {\n`
+    bodyQueryString = `CONTEXT-PLACEHOLDER: resources(clusterContext: $CONTEXT-PLACEHOLDER, name: $name) {
         apiVersion
         kind
         metadata {
@@ -32,7 +31,7 @@ export class GqlResourceQuery extends BaseQuery {
           namespace
         }
       }\n`
-    footerQueryString: string = `}`
+    footerQueryString = `}`
 
     transform(resultObj: OperationResult): tableObject {
         let obj = []

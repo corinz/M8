@@ -4,12 +4,13 @@ import type {tableObject} from "./jsonTable";
 
 // BaseQuery implements BaseQueryInterface
 export class BaseQuery {
-    readonly query: TypedDocumentNode
+    readonly query: TypedDocumentNode<any, AnyVariables>
     readonly rootQueryString: string
     readonly bodyQueryString: string
     readonly footerQueryString: string
     readonly client: Client
     contexts: string[]
+    enableTemplating: boolean
 
     constructor(debug?: boolean) {
         this.client = getContextClient()
@@ -42,15 +43,15 @@ export class BaseQuery {
         }
 
         // TODO: why does this execute twice on load?
-        console.log(templatedRoot + templatedBody + this.footerQueryString)
+        //console.log(templatedRoot + templatedBody + this.footerQueryString)
         return gql(templatedRoot + templatedBody + this.footerQueryString)
     }
 
-    executeQuery(contexts: string[], variables: any): any {
+    executeQuery(contexts?: string[], variables?: any): any {
         this.contexts = contexts
         return queryStore({
             client: this.client,
-            query: this.templateContexts(),
+            query: this.enableTemplating ? this.templateContexts() : this.query,
             variables
         })
     }

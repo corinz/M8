@@ -13,6 +13,7 @@
     let sortDirection: Lowercase<keyof typeof SortValue> = 'ascending';
     let sort = 'id';
 
+    // TODO: fix this
     function handleSort() {
         sortedData.sort((a, b) => {
             const [aVal, bVal] = [a[sort], b[sort]][
