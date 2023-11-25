@@ -6,6 +6,7 @@ import (
 	"github.com/graphql-go/handler"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/tools/clientcmd"
 	"m8/internal/api"
 	"m8/internal/cluster"
 	"net/http"
@@ -27,6 +28,21 @@ func NewApp() *App {
 	}
 }
 
+func GetContexts(path string) []string {
+	var contextNames []string
+	clientConfig, err := clientcmd.LoadFromFile(path)
+	if err != nil {
+		log.Error(err)
+	}
+	if len(clientConfig.Contexts) == 0 {
+		log.Error("No contexts present in \"%s\" config file", path)
+	}
+	for _, v := range clientConfig.Contexts {
+		contextNames = append(contextNames, v.Cluster)
+	}
+	return contextNames
+}
+
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
@@ -41,7 +57,7 @@ func (a *App) startup(ctx context.Context) {
 	a.clusters["kind-kind"] = cluster.NewCluster("kind-kind", path)
 	a.clusters["kind-secondary"] = cluster.NewCluster("kind-secondary", path)
 
-	graphqlStartup(a.clusters, true)
+	graphqlStartup(a.clusters, true, GetContexts(path))
 }
 
 // startup is called when from main() when -headless=true
@@ -55,11 +71,11 @@ func headlessStartup() {
 	clusters := make(map[string]*cluster.Cluster)
 	clusters["kind-kind"] = cluster.NewCluster("kind-kind", path)
 	clusters["kind-secondary"] = cluster.NewCluster("kind-secondary", path)
-	graphqlStartup(clusters, true)
+	graphqlStartup(clusters, true, GetContexts(path))
 }
 
-func graphqlStartup(clusters map[string]*cluster.Cluster, apollo bool) {
-	schema, err := api.BuildSchema(clusters)
+func graphqlStartup(clusters map[string]*cluster.Cluster, apollo bool, contexts []string) {
+	schema, err := api.BuildSchema(clusters, contexts)
 	if err != nil {
 		log.Fatalln(err)
 	}

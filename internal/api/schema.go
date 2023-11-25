@@ -3,10 +3,10 @@ package api
 import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
+	"m8/internal/cluster"
 )
-import "m8/internal/cluster"
 
-func BuildSchema(clusters map[string]*cluster.Cluster) (graphql.Schema, error) {
+func BuildSchema(clusters map[string]*cluster.Cluster, contexts []string) (graphql.Schema, error) {
 	mapStringAnyScalar := graphql.NewScalar(
 		graphql.ScalarConfig{
 			Name:        "MapStringAnyScalar",
@@ -160,6 +160,14 @@ func BuildSchema(clusters map[string]*cluster.Cluster) (graphql.Schema, error) {
 					name := p.Args["name"].(string)
 					clusterCtx := p.Args["clusterContext"].(string)
 					return clusters[clusterCtx].GetResources(name)
+				},
+			},
+			"contexts": &graphql.Field{
+				Type:        graphql.NewList(graphql.String),
+				Description: "Kubernetes Contexts",
+				Name:        "Contexts",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return contexts, nil
 				},
 			},
 		},
