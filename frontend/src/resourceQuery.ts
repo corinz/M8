@@ -20,8 +20,8 @@ class resourceClass {
 
 export class GqlResourceQuery extends BaseQuery {
     enableTemplating = true
-    rootQueryString = `query RootQuery($name: String, CONTEXT-TYPE-PLACEHOLDER) {\n`
-    bodyQueryString = `CONTEXT-PLACEHOLDER: resources(clusterContext: $CONTEXT-PLACEHOLDER, name: $name) {
+    rootQueryString = `query RootQuery($name: String) {\n`
+    bodyQueryString = `PARAM-PLACEHOLDER: resources(clusterContext: "CONTEXT-PLACEHOLDER", name: $name) {
         apiVersion
         kind
         metadata {

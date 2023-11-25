@@ -41,12 +41,12 @@
 
 <main class="nopointer" on:keydown={handleKeyDown}>
     <div>
-        <pre class="flex">
-  ┌────┐
-  │   ▼│
-  │ m8 │
-  └────┘
-        </pre>
+<!--        <pre>-->
+<!--  ┌────┐-->
+<!--  │   ▼│-->
+<!--  │ m8 │-->
+<!--  └────┘-->
+<!--        </pre>-->
         <Legend></Legend>
         <SearchBar searchEventKey={searchEventKey}/>
     </div>

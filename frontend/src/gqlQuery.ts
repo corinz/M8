@@ -24,27 +24,19 @@ export class BaseQuery {
     }
 
     templateContexts(): TypedDocumentNode<any, AnyVariables> {
-        // root query templating
-        let templatedRoot: string = this.rootQueryString
-        for (let c of this.contexts) {
-            // convert dashes to underscore for graphql compliance
-            c = c.replace("-", "_")
-            templatedRoot = templatedRoot.replace("CONTEXT-TYPE-PLACEHOLDER", `$${c}: String, CONTEXT-TYPE-PLACEHOLDER`)
-        }
-        // clean up remaining placeholder
-        templatedRoot = templatedRoot.replace("CONTEXT-TYPE-PLACEHOLDER", "")
-
         // body query templating
         let templatedBody: string = ``
-        for (let c of this.contexts) {
+        for (let context of this.contexts) {
             // convert dashes to underscore for graphql compliance
-            c = c.replace("-", "_")
-            templatedBody += this.bodyQueryString.replaceAll("CONTEXT-PLACEHOLDER", c)
+            let paramName = context.replaceAll("-", "_")
+            let firstTemplate  = this.bodyQueryString.replaceAll("PARAM-PLACEHOLDER", paramName)
+            let secondTemplate = firstTemplate.replaceAll("CONTEXT-PLACEHOLDER", context)
+            templatedBody += secondTemplate
         }
 
         // TODO: why does this execute twice on load?
-        //console.log(templatedRoot + templatedBody + this.footerQueryString)
-        return gql(templatedRoot + templatedBody + this.footerQueryString)
+        // console.log(this.rootQueryString + templatedBody + this.footerQueryString)
+        return gql(this.rootQueryString + templatedBody + this.footerQueryString)
     }
 
     executeQuery(contexts?: string[], variables?: any): any {
