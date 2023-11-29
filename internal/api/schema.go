@@ -155,11 +155,16 @@ func BuildSchema(clusters map[string]*cluster.Cluster, contexts []string) (graph
 					"name": &graphql.ArgumentConfig{
 						Type: graphql.String,
 					},
+					"namespace": &graphql.ArgumentConfig{
+						Type:         graphql.String,
+						DefaultValue: "",
+					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					name := p.Args["name"].(string)
+					namespace := p.Args["namespace"].(string)
 					clusterCtx := p.Args["clusterContext"].(string)
-					return clusters[clusterCtx].GetResources(name)
+					return clusters[clusterCtx].GetResources(name, namespace)
 				},
 			},
 			"contexts": &graphql.Field{

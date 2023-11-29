@@ -153,7 +153,7 @@ func (c Client) GvkFromName(name string) (schema.GroupVersionKind, error) {
 	return c.gvkMap[name], nil
 }
 
-func (c Client) GetResources(name string) (any, error) {
+func (c Client) GetResources(name string, ns string) (any, error) {
 	listOptions := metav1.ListOptions{}
 	name = strings.ToLower(name)
 
@@ -162,7 +162,7 @@ func (c Client) GetResources(name string) (any, error) {
 		log.Warnln("Bad resource name")
 	}
 	resource := c.dynamicClient.Resource(gvr)
-	unstruc, _ := resource.List(context.TODO(), listOptions)
+	unstruc, _ := resource.Namespace(ns).List(context.TODO(), listOptions)
 	var unstrucList = make([]map[string]interface{}, 0)
 	for _, v := range unstruc.Items {
 		unstrucList = append(unstrucList, v.Object)
