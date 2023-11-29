@@ -1,11 +1,7 @@
-1. Ability to change context
-2. Hot keys
-3. Interface types for every kube kind
-4. Breadcrumbs
-5. Get yaml
-6. Move keydown to seperate class
-7. cleanup getAllServerResources functions
-8. preload reflected types
++1. Breadcrumbs
++2. Get yaml
++3. add namespace query param
++4. make search bar and legend static
 
 - Plugin capability
 - Edit capability
