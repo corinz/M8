@@ -65,16 +65,16 @@ func (c *Connection) establish() {
 	c.Config = cfg
 }
 
-// establishConfig creates a connection to the kube API using the config file and context provided
+// establishConfig creates a connection config to the kube API using the config file and context provided
 // if no context is provided e.g. "", it will default to the "current-context"
 func (c *Connection) establishConfig() (*rest.Config, error) {
 	clientConfig := &clientcmd.ClientConfigLoadingRules{ExplicitPath: c.Path}
 	clientConfigOverrides := &clientcmd.ConfigOverrides{CurrentContext: c.Context}
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(clientConfig, clientConfigOverrides).ClientConfig()
 	if err != nil {
-		log.Warnf("Failed to establish connection to context: \"%s\" via Kube Config file. %s", c.Context, err)
+		log.Warnf("Failed to load client config to context: \"%s\" via Kube Config file. %s", c.Context, err)
 	} else {
-		log.Infof("Successfully established connection to context: \"%s\" via Kube Config file.", c.Context)
+		log.Infof("Successfully loaded client config to context: \"%s\" via Kube Config file.", c.Context)
 	}
 	return config, err
 }
@@ -83,9 +83,9 @@ func (c *Connection) establishConfig() (*rest.Config, error) {
 func (c *Connection) establishLocal() (*rest.Config, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Warn("Failed to establish connection via local method.", err)
+		log.Warn("Failed to load client config via local method.", err)
 	} else {
-		log.Info("Successfully established connection via local method.")
+		log.Info("Successfully loaded client config via local method.")
 	}
 	return config, err
 }

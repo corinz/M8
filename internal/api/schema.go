@@ -3,10 +3,10 @@ package api
 import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
-	"m8/internal/cluster"
+	"m8/internal/client"
 )
 
-func BuildSchema(clusters map[string]*cluster.Cluster, contexts []string) (graphql.Schema, error) {
+func BuildSchema(clusters map[string]*client.Client, contexts []string) (graphql.Schema, error) {
 	mapStringAnyScalar := graphql.NewScalar(
 		graphql.ScalarConfig{
 			Name:        "MapStringAnyScalar",
