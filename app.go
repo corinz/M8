@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 	"m8/internal/api"
-	"m8/internal/cluster"
+	"m8/internal/client"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,12 +17,12 @@ import (
 // App struct
 type App struct {
 	ctx      context.Context
-	clusters map[string]*cluster.Cluster
+	clusters map[string]*client.Client
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-	clusters := make(map[string]*cluster.Cluster)
+	clusters := make(map[string]*client.Client)
 	return &App{
 		clusters: clusters,
 	}
@@ -53,11 +53,13 @@ func (a *App) startup(ctx context.Context) {
 		home = "/root"
 	}
 	path := filepath.Join(home, ".kube", "Config")
+	contextsDiscovered := GetContexts(path)
 
-	a.clusters["kind-kind"] = cluster.NewCluster("kind-kind", path)
-	a.clusters["kind-secondary"] = cluster.NewCluster("kind-secondary", path)
+	for _, contextDiscovered := range contextsDiscovered {
+		a.clusters[contextDiscovered] = client.NewCluster(contextDiscovered, path)
+	}
 
-	graphqlStartup(a.clusters, true, GetContexts(path))
+	graphqlStartup(a.clusters, true, contextsDiscovered)
 }
 
 // startup is called when from main() when -headless=true
@@ -68,13 +70,17 @@ func headlessStartup() {
 		home = "/root"
 	}
 	path := filepath.Join(home, ".kube", "Config")
-	clusters := make(map[string]*cluster.Cluster)
-	clusters["kind-kind"] = cluster.NewCluster("kind-kind", path)
-	clusters["kind-secondary"] = cluster.NewCluster("kind-secondary", path)
-	graphqlStartup(clusters, true, GetContexts(path))
+	clusters := make(map[string]*client.Client)
+	contextsDiscovered := GetContexts(path)
+
+	for _, contextDiscovered := range contextsDiscovered {
+		clusters[contextDiscovered] = client.NewCluster(contextDiscovered, path)
+	}
+
+	graphqlStartup(clusters, true, contextsDiscovered)
 }
 
-func graphqlStartup(clusters map[string]*cluster.Cluster, apollo bool, contexts []string) {
+func graphqlStartup(clusters map[string]*client.Client, apollo bool, contexts []string) {
 	schema, err := api.BuildSchema(clusters, contexts)
 	if err != nil {
 		log.Fatalln(err)

@@ -25,27 +25,36 @@ type Client struct {
 	dynamicClient          *dynamic.DynamicClient
 	KnownTypesMap          map[schema.GroupVersionKind]reflect.Type
 	KnownTypesObjMap       map[string]any
+	connection             connect.Connection
+	Active                 bool
 }
 
-func NewClient(c connect.Connection) (*Client, error) {
-	disClient, err := newDiscovery(c)
+func NewCluster(configContext string, configPath string) *Client {
+	return &Client{
+		connection: connect.NewConnection(configContext, configPath),
+		Active:     false,
+	}
+}
+
+func (c *Client) lazyLoad() error {
+	disClient, err := newDiscovery(c.connection)
 	if err != nil {
-		log.Errorln(err)
+		return err
 	}
 
-	dynClient, err := newDynamic(c)
+	dynClient, err := newDynamic(c.connection)
 	if err != nil {
-		log.Errorln(err)
+		return err
 	}
 
 	ver, err := disClient.ServerVersion()
 	if err != nil {
-		log.Errorln(err)
+		return err
 	}
 
 	PreferredResourcesList, err := disClient.ServerPreferredResources()
 	if err != nil {
-		log.Errorln(err)
+		return err
 	}
 	PreferredResourcesMap := make(map[string]v1.APIResource)
 	for _, apiResourceList := range PreferredResourcesList {
@@ -58,25 +67,25 @@ func NewClient(c connect.Connection) (*Client, error) {
 
 	gvrMap, gvkMap, err := allResources(disClient)
 	if err != nil {
-		log.Errorln(err)
+		return err
 	}
 
-	client := &Client{
-		PreferredResourcesList: PreferredResourcesList,
-		PreferredResourcesMap:  PreferredResourcesMap,
-		version:                ver,
-		gvrMap:                 gvrMap,
-		gvkMap:                 gvkMap,
-		discoveryClient:        disClient,
-		dynamicClient:          dynClient,
-		KnownTypesMap:          scheme.Scheme.AllKnownTypes(),
-		KnownTypesObjMap:       make(map[string]any),
-	}
+	// update client
+	c.PreferredResourcesList = PreferredResourcesList
+	c.PreferredResourcesMap = PreferredResourcesMap
+	c.version = ver
+	c.gvrMap = gvrMap
+	c.gvkMap = gvkMap
+	c.discoveryClient = disClient
+	c.dynamicClient = dynClient
+	c.KnownTypesMap = scheme.Scheme.AllKnownTypes()
+	c.KnownTypesObjMap = make(map[string]any)
+	c.Active = true
 
-	return client, nil
+	return nil
 }
 
-// NewDiscovery creates a client discoveryClient and obtains server version and list of
+// newDiscovery creates a client discoveryClient and obtains server version and list of
 func newDiscovery(c connect.Connection) (*disc.DiscoveryClient, error) {
 	var err error
 	client, err := disc.NewDiscoveryClientForConfig(c.Config)
@@ -144,16 +153,22 @@ func allResources(client *disc.DiscoveryClient) (map[string]schema.GroupVersionR
 }
 
 // GvrFromName returns GVR from Resource Name
-func (c Client) GvrFromName(name string) (schema.GroupVersionResource, error) {
+func (c *Client) GvrFromName(name string) (schema.GroupVersionResource, error) {
 	return c.gvrMap[name], nil
 }
 
 // GvkFromName returns GVR from Resource Name
-func (c Client) GvkFromName(name string) (schema.GroupVersionKind, error) {
+func (c *Client) GvkFromName(name string) (schema.GroupVersionKind, error) {
 	return c.gvkMap[name], nil
 }
 
-func (c Client) GetResources(name string, ns string) (any, error) {
+func (c *Client) GetResources(name string, ns string) (any, error) {
+	if c.Active == false {
+		err := c.lazyLoad()
+		if err != nil {
+			log.Errorln("unable to lazy load the cluster client", err)
+		}
+	}
 	listOptions := metav1.ListOptions{}
 	name = strings.ToLower(name)
 
