@@ -14,11 +14,11 @@ type Connection struct {
 	ApiUrl string `json:"apiUrl"`
 	ConfigFile
 	Established bool `json:"established"`
-	config      *rest.Config
+	Config      *rest.Config
 	ClientSet   *kubernetes.Clientset
 }
 
-func NewConnection(apiUrl string, context string, path string) *Connection {
+func NewConnection(apiUrl string, context string, path string) Connection {
 	configFile := ConfigFile{
 		Context: context,
 		Path:    path,
@@ -27,10 +27,10 @@ func NewConnection(apiUrl string, context string, path string) *Connection {
 		ApiUrl:      apiUrl,
 		ConfigFile:  configFile,
 		Established: false,
-		config:      nil,
+		Config:      nil,
 		ClientSet:   nil,
 	}
 	conn.Connect()
 
-	return &conn
+	return conn
 }
