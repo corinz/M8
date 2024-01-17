@@ -7,7 +7,7 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 	// API Resource Type
 	apiResourceType := graphql.NewObject(graphql.ObjectConfig{
 		Name:        "APIResource",
-		Description: "A single Kubernetes API",
+		Description: "A Kubernetes API",
 		Fields: graphql.Fields{
 			"Name": &graphql.Field{
 				Type:        graphql.String,
@@ -19,18 +19,25 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 				Name:        "API Kind",
 				Description: "API Kind",
 			},
+			"ShortNames": &graphql.Field{
+				Type:        graphql.NewList(graphql.String),
+				Name:        "API Version",
+				Description: "API Version",
+			},
 		},
 	})
 
-	// API Resources Type
-	apiResourcesType := graphql.NewObject(graphql.ObjectConfig{
-		Name:        "APIResources",
-		Description: "A list of Kubernetes APIs",
+	apiGroupType := graphql.NewObject(graphql.ObjectConfig{
+		Name:        "APIGroup",
+		Description: "A Kubernetes API Group",
 		Fields: graphql.Fields{
+			"GroupVersion": &graphql.Field{
+				Type: graphql.String,
+				Name: "API Group Version",
+			},
 			"APIResources": &graphql.Field{
-				Type:        graphql.NewList(apiResourceType),
-				Name:        "APIResources",
-				Description: "A list of Kubernetes APIs",
+				Type: graphql.NewList(apiResourceType),
+				Name: "API Resources",
 			},
 		},
 	})
@@ -40,7 +47,7 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 		Fields: graphql.Fields{
 			"apiResource": &graphql.Field{
 				Type:        apiResourceType,
-				Description: "Get single API",
+				Description: "API",
 				Name:        "API Resource",
 				Args: graphql.FieldConfigArgument{
 					"name": &graphql.ArgumentConfig{
@@ -54,12 +61,21 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 				},
 			},
 			"apiResources": &graphql.Field{
-				Type:        apiResourcesType,
-				Description: "Get all APIs",
+				Type:        graphql.NewList(apiResourceType),
+				Description: "List of API Resources",
 				Name:        "API Resources",
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					// TODO  unexport Resources
-					return c.Resources[0], nil
+					return c.Resources[0].APIResources, nil
+				},
+			},
+			"apiGroups": &graphql.Field{
+				Type:        graphql.NewList(apiGroupType),
+				Description: "List of API Groups and APIs",
+				Name:        "API Groups",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					// TODO  unexport Resources
+					return c.Resources, nil
 				},
 			},
 		},
