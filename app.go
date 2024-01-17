@@ -6,6 +6,7 @@ import (
 	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
 	"github.com/rs/cors"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"m8/internal/api"
@@ -119,10 +120,16 @@ func headlessStartup() {
 	}
 }
 
-func (a *App) AppGetApiResourcesByName(name string) v1.APIResource {
-	return a.cluster.GetApiResourceByName(name)
-}
-
 func (a *App) AppGetApiResources() []v1.APIResource {
 	return a.cluster.GetApiResources()
+}
+
+// TODO: causing issues in the frontend, unstructured type binding is not generated
+//func (a *App) AppGetResourceByName(name string, ns string) []unstructured.Unstructured {
+//	u, _ := a.cluster.UnstructuredResourceByName(name, ns)
+//	return u
+//}
+
+func (a *App) AppGetDeployments() []*appsv1.Deployment {
+	return a.cluster.KnownTypesObjMap["Deployment"].([]*appsv1.Deployment)
 }

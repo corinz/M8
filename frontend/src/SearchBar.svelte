@@ -1,21 +1,89 @@
 <script lang="ts">
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
-    import {AppGetApiResources, AppGetApiResourcesByName} from "../wailsjs/go/main/App";
+    import {
+        AppGetApiResources, AppGetDeployments
+    } from "../wailsjs/go/main/App";
     import {v1} from "../wailsjs/go/models";
     import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
     import {onMount} from 'svelte';
+    import {defaultFocus} from "./focus"
 
     export let searchEventKey: string;
-    let searchBarInput: string
-    let tableObject: v1.APIResource[] = [];
+    let searchBarInput: string = "apis"
+    let namespace: string = ""
+    let tableObject = []
     let numResults: number = 0
     $: numResults = tableObject.length
     let filteredTableObject = []
     let errorMessage: string = "";
 
-    onMount(async () => tableObject = await AppGetApiResources().then(result => result))
+    interface api {
+        name: string;
+        singularName: string;
+        namespaced: boolean;
+        kind: string;
+        verbs: string[];
+        shortNames?: string[];
+        categories?: string[];
+    }
+
+    const blankAPI: api = {
+        categories: [],
+        kind: "",
+        name: "",
+        namespaced: false,
+        shortNames: [],
+        singularName: "",
+        verbs: []
+    }
+
+    class kind {
+        name: string = ''
+        namespace: string = ''
+        kind: string = ''
+        ip: string = ''
+        phase: string = ''
+    }
+
+    function kindListDestructure(unstructuredObject): kind[] {
+        let list: kind[]
+        // destructure into a kind object
+        if (unstructuredObject.length > 0) {
+            list = []
+            Object.entries(unstructuredObject).forEach(objArr => {
+                const obj = objArr[1] // unstructured kube object
+                const k = {
+                    name: obj["metadata"]["name"],
+                    namespace: obj["metadata"]["namespace"],
+                    kind: obj["kind"],
+                    //ip: obj["status"]["podIP"],
+                    //phase: obj["status"]["phase"]
+                } as kind
+                list.push(k)
+            })
+        } else {
+            //empty kind obj array to preserve downstream views
+            list = [new kind()]
+        }
+        return list
+    }
+
+    function apiListDestructure(a: v1.APIResource | v1.APIResource[]): api[] {
+        let list: api[] = []
+        Object.entries(a).forEach(([, obj]) => {
+            // all keys of interface must be non-null, in case we use obj for table head row keys
+            Object.keys(blankAPI).forEach(key => {
+                obj[key] = obj[key] ?? ""
+            })
+            list.push(obj as api)
+        })
+        return list
+    }
+
+    // Default view
+    onMount(async () => search())
 
     const filterOptions = {
         keys: ['name'],
@@ -34,19 +102,26 @@
 
     function search(): void {
         // Don't search blank input
-        if (searchBarInput !== "") {
-            AppGetApiResourcesByName(searchBarInput).then(r => {
-                if (r.name == null || r.name == "") {
+        if (searchBarInput === "apis") {
+            AppGetApiResources().then(r => {
+                tableObject = apiListDestructure(r)
+                numResults = tableObject.length
+                errorMessage = ""
+            })
+        } else if (searchBarInput !== "") {
+            AppGetUnstructuredResourceByName(searchBarInput, namespace).then(rList => {
+                if (!rList) {
                     errorMessage = "Resource not found"
                 } else {
-                    tableObject = [r]
+                    tableObject = kindListDestructure(rList)
                     numResults = tableObject.length
                     errorMessage = ""
                 }
             })
         }
-        // Clear search bar value after search
+        // Clear search bar and reset focus after search
         searchBarInput = ""
+        defaultFocus()
     }
 
     function filter(): void {
@@ -62,6 +137,7 @@
         }
     }
 
+    // Handles dyanmic input
     function handleInput(): void {
         if (searchEventKey === ':') {
             search()
@@ -74,11 +150,9 @@
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
         if (event.key === 'Enter') {
-            if (searchEventKey === ':') {
-                search()
-            } else if (searchEventKey === '/') {
-                filter()
-            }
+            // prevent the next element (table) from receiving this event
+            event.preventDefault()
+            handleInput()
         }
     }
 </script>
@@ -93,20 +167,21 @@
                 placeholder="Press : to search or / to filter"
                 class="solo-input"
                 type="text"
+                autocomplete="off"
         />
         {numResults}
     </Paper>
     <div style="padding: 20px 0; color: red">
-    {errorMessage}
+        {errorMessage}
     </div>
 </div>
 
 <div class="scroll">
-{#if filteredTableObject.length !== 0 }
-    <JsonTable data={filteredTableObject}/>
-{:else}
-    <JsonTable data={tableObject}/>
-{/if}
+    {#if filteredTableObject.length !== 0 }
+        <JsonTable data={filteredTableObject}/>
+    {:else}
+        <JsonTable data={tableObject}/>
+    {/if}
 </div>
 
 <style>

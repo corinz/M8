@@ -4,4 +4,4 @@ import {v1} from '../models';
 
 export function AppGetApiResources():Promise<Array<v1.APIResource>>;
 
-export function AppGetApiResourcesByName(arg1:string):Promise<v1.APIResource>;
+export function AppGetDeployments():Promise<Array<v1.Deployment>>;
