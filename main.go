@@ -1,62 +1,46 @@
 package main
 
 import (
+	"embed"
 	"flag"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/handler"
+	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/options"
+	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"log"
-	"m8/internal/api"
-	"m8/internal/cluster"
-	"net/http"
 )
 
+//go:embed all:frontend/dist
+var assets embed.FS
+
 func main() {
-	configPath := flag.String("configPath", "", "Full path to Kube config file e.g. ~/.kube/config")
-	configContext := flag.String("configContext", "", "Kube config context name")
-	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
 
-	cluster := cluster.NewCluster(*apiUrl, *configContext, *configPath)
-	cluster.PrintApiGroups()
+	headless := flag.Bool("headless", false, "Run in backend only")
+	flag.Parse()
 
-	schema, err := api.BuildSchema(cluster)
-	if err != nil {
-		log.Fatal(err)
+	if bool(*headless) == false {
+		// Create an instance of the app structure
+		app := NewApp()
+
+		// Create application with options
+		err := wails.Run(&options.App{
+			Title:  "m8",
+			Width:  1024,
+			Height: 768,
+			AssetServer: &assetserver.Options{
+				Assets: assets,
+			},
+			BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+			OnStartup:        app.startup,
+			Bind: []interface{}{
+				app,
+			},
+		})
+
+		if err != nil {
+			println("Error:", err.Error())
+		}
+	} else {
+		log.Println("Running in headless mode")
+		headlessStartup()
 	}
-	h := handler.New(&handler.Config{
-		Schema:   &schema,
-		Pretty:   true,
-		GraphiQL: false,
-		FormatErrorFn: func(err error) gqlerrors.FormattedError {
-			gqlErr := gqlerrors.FormattedError{
-				Message: err.Error(),
-			}
-			log.Println("GraphQL Error: ", err)
-			return gqlErr
-		},
-	})
-	http.Handle("/graphql", h)
-
-	var sandboxHTML = []byte(`
-		<!DOCTYPE html>
-		<html lang="en">
-		<body style="margin: 0; overflow-x: hidden; overflow-y: hidden">
-		<div id="sandbox" style="height:100vh; width:100vw;"></div>
-		<script src="https://embeddable-sandbox.cdn.apollographql.com/_latest/embeddable-sandbox.umd.production.min.js"></script>
-		<script>
-		new window.EmbeddedSandbox({
-		  target: "#sandbox",
-		  // Pass through your server href if you are embedding on an endpoint.
-		  // Otherwise, you can pass whatever endpoint you want Sandbox to start up with here.
-		  initialEndpoint: "http://localhost:8080/graphql",
-		});
-		// advanced options: https://www.apollographql.com/docs/studio/explorer/sandbox#embedding-sandbox
-		</script>
-		</body>
-		</html>`)
-
-	http.Handle("/sandbox", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(sandboxHTML)
-	}))
-
-	http.ListenAndServe(":8080", nil)
 }
