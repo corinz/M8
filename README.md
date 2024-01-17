@@ -1,5 +1,6 @@
-# Kube m8 (pronounced like "cube mate")
-A sort-of-working desktop app implementation of a Kubernetes client viewer, that stands on the shoulders of framework giants Svelte and Wails.
+![logo](./docs/logo.svg)
+
+A desktop app implementation of a Kubernetes client viewer, that stands on the shoulders of framework giants Svelte and Wails.
 
 Here's a list of things that work:
 1. A working UI/desktop application
@@ -22,9 +23,6 @@ Here's a list of things that work:
 2. Docker
 3. Kind
 4. Wails
-
-## Contributions
-Together, with combined brain-power, we might discover that this project isn't worth working on.
 
 ## Live Development
 To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
