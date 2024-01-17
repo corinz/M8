@@ -4,37 +4,44 @@ import "github.com/graphql-go/graphql"
 import "m8/internal/cluster"
 
 func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
-	var api = graphql.ObjectConfig{
-		Name:        "Kubernetes API",
+	// API Resource Type
+	apiResourceType := graphql.NewObject(graphql.ObjectConfig{
+		Name:        "APIResource",
 		Description: "A single Kubernetes API",
 		Fields: graphql.Fields{
-			"groupVersion": &graphql.Field{
-				Type:        graphql.String,
-				Name:        "Group Version",
-				Description: "Group Version",
-			},
-			"name": &graphql.Field{
+			"Name": &graphql.Field{
 				Type:        graphql.String,
 				Name:        "API Name",
 				Description: "API Name",
 			},
-			"kind": &graphql.Field{
+			"Kind": &graphql.Field{
 				Type:        graphql.String,
 				Name:        "API Kind",
 				Description: "API Kind",
 			},
 		},
-	}
+	})
 
-	var apiObject = graphql.NewObject(api)
-
-	var apis = graphql.ObjectConfig{
-		Name: "Kubernetes APIs",
+	// API Resources Type
+	apiResourcesType := graphql.NewObject(graphql.ObjectConfig{
+		Name:        "APIResources",
+		Description: "A list of Kubernetes APIs",
 		Fields: graphql.Fields{
-			"api": &graphql.Field{
-				Type:        apiObject,
+			"APIResources": &graphql.Field{
+				Type:        graphql.NewList(apiResourceType),
+				Name:        "APIResources",
+				Description: "A list of Kubernetes APIs",
+			},
+		},
+	})
+
+	rootQuery := graphql.NewObject(graphql.ObjectConfig{
+		Name: "RootQuery",
+		Fields: graphql.Fields{
+			"apiResource": &graphql.Field{
+				Type:        apiResourceType,
 				Description: "Get single API",
-				Name:        "Kubernetes API",
+				Name:        "API Resource",
 				Args: graphql.FieldConfigArgument{
 					"name": &graphql.ArgumentConfig{
 						Type: graphql.String,
@@ -46,20 +53,19 @@ func BuildSchema(c *cluster.Cluster) (graphql.Schema, error) {
 					return c.PrintApiResourceByName(name), nil
 				},
 			},
-			"apis": &graphql.Field{
-				Type:        graphql.NewList(apiObject),
-				Description: "All APIs",
-				Name:        "All APIs",
+			"apiResources": &graphql.Field{
+				Type:        apiResourcesType,
+				Description: "Get all APIs",
+				Name:        "API Resources",
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					// TODO  what to return here? must be json type?
-					return "something", nil
+					// TODO  unexport Resources
+					return c.Resources[0], nil
 				},
 			},
 		},
-	}
+	})
 
-	var apisObject = graphql.NewObject(apis)
 	return graphql.NewSchema(graphql.SchemaConfig{
-		Query: apisObject,
+		Query: rootQuery,
 	})
 }

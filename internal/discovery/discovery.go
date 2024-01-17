@@ -15,12 +15,12 @@ import (
 type Discovery struct {
 	client    *disc.DiscoveryClient
 	version   *version.Info
-	resources []*v1.APIResourceList
+	Resources []*v1.APIResourceList
 	writer    *tabwriter.Writer
 }
 
 // NewDiscovery creates a discovery client and obtains server version and list of
-// API resources
+// API Resources
 func NewDiscovery(c connect.Connection) *Discovery {
 	client, err := disc.NewDiscoveryClientForConfig(c.Config)
 	if err != nil {
@@ -39,14 +39,14 @@ func NewDiscovery(c connect.Connection) *Discovery {
 	writer := tabwriter.NewWriter(os.Stdout, 2, 2, 1, ' ', 0)
 	return &Discovery{
 		client:    client,
-		resources: preferredResources,
+		Resources: preferredResources,
 		version:   version,
 		writer:    writer,
 	}
 }
 
 //func (d Discovery) PrintAllResources() {
-//	for _, resourceList := range d.resources {
+//	for _, resourceList := range d.Resources {
 //		fmt.Printf("Group Version: %s\n", resourceList.GroupVersion)
 //
 //		fmt.Fprintf(d.writer, "Name\tKind\n")
@@ -58,16 +58,17 @@ func NewDiscovery(c connect.Connection) *Discovery {
 //	}
 //}
 
-// TODO finish this
-func (d Discovery) PrintApiResourceByName(name string) string {
-	for _, rlist := range d.resources {
+// TODO: better way to look up? hash table?
+func (d Discovery) PrintApiResourceByName(name string) v1.APIResource {
+	api := v1.APIResource{}
+	for _, rlist := range d.Resources {
 		for _, r := range rlist.APIResources {
 			if r.Name == name {
-				return name
+				api = r
 			}
 		}
 	}
-	return ""
+	return api
 }
 
 func (d Discovery) PrintApiResource(r v1.APIResource) {
@@ -92,7 +93,7 @@ func (d Discovery) PrintApiResourcesByGroup(gv string) {
 }
 
 func (d Discovery) PrintApiGroups() {
-	// Should print the equivalent of d.resources
+	// Should print the equivalent of d.Resources
 	gvs, _ := d.client.ServerGroups()
 	for _, g := range gvs.Groups {
 		var gv = ""

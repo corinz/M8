@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/handler"
+	"log"
 	"m8/internal/api"
 	"m8/internal/cluster"
 	"net/http"
@@ -14,13 +16,23 @@ func main() {
 	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
 
 	cluster := cluster.NewCluster(*apiUrl, *configContext, *configPath)
-	//cluster.PrintApiGroups()
+	cluster.PrintApiGroups()
 
-	schema, _ := api.BuildSchema(cluster)
+	schema, err := api.BuildSchema(cluster)
+	if err != nil {
+		log.Fatal(err)
+	}
 	h := handler.New(&handler.Config{
 		Schema:   &schema,
 		Pretty:   true,
-		GraphiQL: true,
+		GraphiQL: false,
+		FormatErrorFn: func(err error) gqlerrors.FormattedError {
+			gqlErr := gqlerrors.FormattedError{
+				Message: err.Error(),
+			}
+			log.Println("GraphQL Error: ", err)
+			return gqlErr
+		},
 	})
 	http.Handle("/graphql", h)
 
