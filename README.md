@@ -1,6 +1,5 @@
 ![logo](./docs/logo.svg)
 
-# M8
 A desktop app implementation of a Kubernetes client viewer, that stands on the shoulders of framework giants Svelte and Wails.
 
 Here's a list of things that work:
