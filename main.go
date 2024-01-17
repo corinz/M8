@@ -1,7 +1,10 @@
-package m8
+package main
 
 import (
+	"context"
 	"flag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"log"
 	"m8/internal/connect"
 )
 
@@ -11,5 +14,9 @@ func main() {
 	apiUrl := flag.String("apiUrl", "", "Fully-qualified Kube API URL")
 
 	conn := connect.NewConnection(*apiUrl, *configContext, *configPath)
-	// TODO
+	ds, _ := conn.ClientSet.AppsV1().DaemonSets("kube-system").List(context.TODO(), metav1.ListOptions{})
+	for _, d := range ds.Items {
+		log.Println(d.Name)
+	}
+
 }
