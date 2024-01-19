@@ -1,12 +1,12 @@
 <script lang="ts">
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
-    import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
-    import {defaultFocus, focusedElement} from "./focus"
+    import {focusedElement} from "./focus"
     import _ from 'underscore';
     import {GqlResourceQuery} from "./resourceQuery.ts"
     import {activeContextStore, allContextStore} from "./activeContextStore";
+    import {dataStore} from "./jsonTable";
 
     // search and filter and ui
     export let searchEventKey: string
@@ -18,7 +18,7 @@
     }
     $: debounceDelay = searchEventKey === '/' ? 600 : 850
     $: debouncedHandleInput = _.debounce(handleInput, debounceDelay)
-    $: tableObject ? defaultFocus() : focusedElement.set(document.getElementById("search"))
+    focusedElement.set(document.getElementById("search"))
 
     // Graphql
     let queryVars = {"name": "pod"}
@@ -59,7 +59,7 @@
             const name = searchBarInput
             queryVars = {name}
         }
-        // Clear search bar and reset focus after search
+        // Clear search bar
         searchBarInput = ""
     }
 
@@ -82,16 +82,25 @@
         }
     }
 
-    // Handles "Enter" button when focused on search bar
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
         if (event.key === 'Enter') {
             // cancel debounce
             debouncedHandleInput.cancel()
-            event.preventDefault() // prevents "enter" action
+            event.preventDefault()
             handleInput()
+        } else if (event.key === '/' || event.key === ':') {
+            searchEventKey = event.key
+            event.preventDefault() // preventDefault to ignore it from input box
+            focusedElement.set(document.getElementById('search'))
+        } else if (event.key === "Escape") {
+            // TODO
         }
     }
+
+    window.addEventListener("keydown", function(e) {
+        handleKeyDown(e)
+    }, false);
 
     $: switch (searchEventKey) {
         case "/":
@@ -103,70 +112,23 @@
         default:
             placeholder = "Press : to search or / to filter"
     }
+
+    $: if (!queryFetching && !queryError) {
+        // set store with fetched data
+        dataStore.set(tableObject)
+    }
 </script>
 
 <div style="padding: 10px 0">
-    <Paper class="solo-paper" elevation={6}>
+    <Paper elevation={6}>
         <Input
                 id="search"
                 bind:value={searchBarInput}
-                on:keydown={handleKeyDown}
                 on:input={debouncedHandleInput}
                 placeholder={placeholder}
-                class="solo-input"
                 type="text"
                 autocomplete="off"
         />
         {numResults}
     </Paper>
 </div>
-
-{#if queryFetching}
-    <p>Fetching...</p>
-{:else if queryError}
-    <p>Error: {queryError.message}</p>
-{:else if !tableObject}
-    <p>Empty dataset</p>
-{:else}
-    <div class="scroll">
-        <JsonTable data={tableObject}/>
-    </div>
-{/if}
-
-<style>
-    * :global(.solo-paper) {
-        display: flex;
-        align-items: center;
-        flex-grow: 1;
-        max-width: 500px;
-        margin: 0 0px;
-        padding: 0 12px;
-        height: 36px;
-
-    }
-
-    * :global(.solo-paper > *) {
-        display: inline-block;
-        margin: 0 6px;
-    }
-
-    * :global(.solo-input) {
-        flex-grow: 1;
-        color: var(--mdc-theme-on-surface, #000);
-    }
-
-    * :global(.solo-input::placeholder) {
-        color: var(--mdc-theme-on-surface, #000);
-        opacity: 0.6;
-    }
-
-    * :global(.solo-fab) {
-        flex-shrink: 0;
-    }
-
-    .scroll {
-        /*TODO: this setting enables horizontal scrolling for the table */
-        /*but disables the sticky header*/
-        overflow-x: auto;
-    }
-</style>
