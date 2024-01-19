@@ -3,6 +3,8 @@
     import Legend from "./Legend.svelte";
     import {focusedElement, defaultFocus} from "./focus"
     import {Client, cacheExchange, fetchExchange, setContextClient} from '@urql/svelte';
+    import {dataStore} from "./jsonTable";
+    import JsonTable from "./JsonTable.svelte";
 
     const client = new Client({
         url: 'http://localhost:8080/graphql',
@@ -32,5 +34,6 @@
     <div>
         <Legend></Legend>
         <SearchBar searchEventKey={searchEventKey}/>
+        <JsonTable data={$dataStore}></JsonTable>
     </div>
 </main>

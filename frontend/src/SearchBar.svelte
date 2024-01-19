@@ -1,12 +1,12 @@
 <script lang="ts">
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
-    import JsonTable from "./JsonTable.svelte";
     import Fuse from 'fuse.js'
     import {defaultFocus, focusedElement} from "./focus"
     import _ from 'underscore';
     import {GqlResourceQuery} from "./resourceQuery.ts"
     import {activeContextStore, allContextStore} from "./activeContextStore";
+    import {dataStore} from "./jsonTable";
 
     // search and filter and ui
     export let searchEventKey: string
@@ -18,7 +18,7 @@
     }
     $: debounceDelay = searchEventKey === '/' ? 600 : 850
     $: debouncedHandleInput = _.debounce(handleInput, debounceDelay)
-    $: tableObject ? defaultFocus() : focusedElement.set(document.getElementById("search"))
+    // $: tableObject ? defaultFocus() : focusedElement.set(document.getElementById("search"))
 
     // Graphql
     let queryVars = {"name": "pod"}
@@ -103,6 +103,11 @@
         default:
             placeholder = "Press : to search or / to filter"
     }
+
+    $: if (!queryFetching && !queryError) {
+        // set store with fetched data
+        dataStore.set(tableObject)
+    }
 </script>
 
 <div style="padding: 10px 0">
@@ -120,18 +125,6 @@
         {numResults}
     </Paper>
 </div>
-
-{#if queryFetching}
-    <p>Fetching...</p>
-{:else if queryError}
-    <p>Error: {queryError.message}</p>
-{:else if !tableObject}
-    <p>Empty dataset</p>
-{:else}
-    <div id="defaultFocus" class="scroll">
-        <JsonTable data={tableObject}/>
-    </div>
-{/if}
 
 <style>
     .scroll {
