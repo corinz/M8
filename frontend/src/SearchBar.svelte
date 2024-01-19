@@ -2,7 +2,7 @@
     import {Input} from '@smui/textfield';
     import Paper from '@smui/paper';
     import Fuse from 'fuse.js'
-    import {defaultFocus, focusedElement} from "./focus"
+    import {focusedElement} from "./focus"
     import _ from 'underscore';
     import {GqlResourceQuery} from "./resourceQuery.ts"
     import {activeContextStore, allContextStore} from "./activeContextStore";
@@ -18,7 +18,7 @@
     }
     $: debounceDelay = searchEventKey === '/' ? 600 : 850
     $: debouncedHandleInput = _.debounce(handleInput, debounceDelay)
-    // $: tableObject ? defaultFocus() : focusedElement.set(document.getElementById("search"))
+    focusedElement.set(document.getElementById("search"))
 
     // Graphql
     let queryVars = {"name": "pod"}
@@ -59,7 +59,7 @@
             const name = searchBarInput
             queryVars = {name}
         }
-        // Clear search bar and reset focus after search
+        // Clear search bar
         searchBarInput = ""
     }
 
@@ -82,16 +82,25 @@
         }
     }
 
-    // Handles "Enter" button when focused on search bar
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         event = event as KeyboardEvent;
         if (event.key === 'Enter') {
             // cancel debounce
             debouncedHandleInput.cancel()
-            event.preventDefault() // prevents "enter" action
+            event.preventDefault()
             handleInput()
+        } else if (event.key === '/' || event.key === ':') {
+            searchEventKey = event.key
+            event.preventDefault() // preventDefault to ignore it from input box
+            focusedElement.set(document.getElementById('search'))
+        } else if (event.key === "Escape") {
+            // TODO
         }
     }
+
+    window.addEventListener("keydown", function(e) {
+        handleKeyDown(e)
+    }, false);
 
     $: switch (searchEventKey) {
         case "/":
@@ -115,21 +124,11 @@
         <Input
                 id="search"
                 bind:value={searchBarInput}
-                on:keydown={handleKeyDown}
                 on:input={debouncedHandleInput}
                 placeholder={placeholder}
-                class="solo-input"
                 type="text"
                 autocomplete="off"
         />
         {numResults}
     </Paper>
 </div>
-
-<style>
-    .scroll {
-        /*TODO: this setting enables horizontal scrolling for the table */
-        /*but disables the sticky header*/
-        overflow-x: auto;
-    }
-</style>

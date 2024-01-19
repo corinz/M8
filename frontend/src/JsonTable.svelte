@@ -11,6 +11,8 @@
     }
 
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
+        document.getElementById('highlight').scrollIntoView({behavior: "auto", block: "center", inline: "nearest"});
+
         event = event as KeyboardEvent;
         if (event.key === 'ArrowUp' || event.key === 'Up') {
             activeRowIndex = Math.max(0, activeRowIndex - 1);
@@ -19,15 +21,16 @@
         }
     }
 
-    $: if (highlightRow) {
-        document.getElementById('defaultFocus').focus();
-    }
+    window.addEventListener("keydown", function(e) {
+        handleKeyDown(e)
+    });
+
 </script>
 
 {#if (!sortedData)}
     Dataset is empty
 {:else if sortedData.length > 0}
-    <DataTable on:keydown={handleKeyDown} style="width: 100%;">
+    <DataTable stickyHeader style="width: 100%;">
         <!-- HEADER ROW -->
         <Head>
             <Row>
@@ -68,5 +71,10 @@
 <style>
     :global(.highlight) {
         background-color: rgba(109, 119, 131, 0.12);
+    }
+    .scroll {
+        /*TODO: this setting enables horizontal scrolling for the table */
+        /*but disables the sticky header*/
+        overflow-x: auto;
     }
 </style>
