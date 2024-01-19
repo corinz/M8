@@ -120,7 +120,7 @@
 </script>
 
 <div style="padding: 10px 0">
-    <Paper class="solo-paper" elevation={6}>
+    <Paper elevation={6}>
         <Input
                 id="search"
                 bind:value={searchBarInput}

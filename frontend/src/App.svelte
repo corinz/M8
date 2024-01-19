@@ -12,19 +12,18 @@
     }, false);
 
     const client = new Client({
+        // TODO: https
         url: 'http://localhost:8080/graphql',
         exchanges: [cacheExchange, fetchExchange],
         maskTypename: true, // suppresses __typename field from graphql response
     });
     setContextClient(client);
-
-    let searchEventKey = ''
 </script>
 
 <main>
     <div>
         <Legend></Legend>
-        <SearchBar searchEventKey={searchEventKey}/>
+        <SearchBar searchEventKey=""/>
         <JsonTable data={$dataStore}></JsonTable>
     </div>
 </main>
