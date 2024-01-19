@@ -20,7 +20,6 @@
     let clusterQStore = contextQuery.executeQuery()
     let clusters
 
-
     let activeContextsLocal: Map<string, string> = new Map()
     let clusterArr: Cluster[] = []
 

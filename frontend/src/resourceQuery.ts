@@ -1,4 +1,4 @@
-import type {AnyVariables, OperationResult, OperationResultStore, TypedDocumentNode} from "@urql/svelte";
+import type {OperationResult} from "@urql/svelte";
 import type {tableObject} from "./jsonTable";
 import {BaseQuery} from "./gqlQuery";
 

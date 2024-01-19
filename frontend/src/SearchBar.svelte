@@ -128,42 +128,12 @@
 {:else if !tableObject}
     <p>Empty dataset</p>
 {:else}
-    <div class="scroll">
+    <div id="defaultFocus" class="scroll">
         <JsonTable data={tableObject}/>
     </div>
 {/if}
 
 <style>
-    * :global(.solo-paper) {
-        display: flex;
-        align-items: center;
-        flex-grow: 1;
-        max-width: 500px;
-        margin: 0 0px;
-        padding: 0 12px;
-        height: 36px;
-
-    }
-
-    * :global(.solo-paper > *) {
-        display: inline-block;
-        margin: 0 6px;
-    }
-
-    * :global(.solo-input) {
-        flex-grow: 1;
-        color: var(--mdc-theme-on-surface, #000);
-    }
-
-    * :global(.solo-input::placeholder) {
-        color: var(--mdc-theme-on-surface, #000);
-        opacity: 0.6;
-    }
-
-    * :global(.solo-fab) {
-        flex-shrink: 0;
-    }
-
     .scroll {
         /*TODO: this setting enables horizontal scrolling for the table */
         /*but disables the sticky header*/
