@@ -2,7 +2,6 @@
     import SearchBar from "./SearchBar.svelte";
     import Legend from "./Legend.svelte";
     import {Client, cacheExchange, fetchExchange, setContextClient} from '@urql/svelte';
-    import {dataStore} from "./jsonTable";
     import JsonTable from "./JsonTable.svelte";
 
     window.addEventListener("keydown", function(e) {
@@ -24,6 +23,6 @@
     <div>
         <Legend></Legend>
         <SearchBar searchEventKey=""/>
-        <JsonTable data={$dataStore}></JsonTable>
+        <JsonTable></JsonTable>
     </div>
 </main>

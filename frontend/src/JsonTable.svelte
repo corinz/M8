@@ -1,13 +1,11 @@
 <script lang="ts">
-    import DataTable, {Body, Cell, Head, Label, Row} from '@smui/data-table';
+    import DataTable, {Body, Cell, Head, Label, Row} from '@smui/data-table'
+    import {dataStore} from "./jsonTable"
 
-    export let data;
-
-    let activeRowIndex = 0;
-    let highlightRow, sortedData;
+    let data, activeRowIndex
     $: {
-        sortedData = data;
-        activeRowIndex = 0;
+        data = $dataStore
+        activeRowIndex = 0
     }
 
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
@@ -17,7 +15,7 @@
         if (event.key === 'ArrowUp' || event.key === 'Up') {
             activeRowIndex = Math.max(0, activeRowIndex - 1);
         } else if (event.key === 'ArrowDown' || event.key === 'Down') {
-            activeRowIndex = Math.min(sortedData.length - 1, activeRowIndex + 1);
+            activeRowIndex = Math.min(data.length - 1, activeRowIndex + 1);
         }
     }
 
@@ -27,14 +25,14 @@
 
 </script>
 
-{#if (!sortedData)}
+{#if (!data)}
     Dataset is empty
-{:else if sortedData.length > 0}
+{:else if data.length > 0}
     <DataTable stickyHeader style="width: 100%;">
         <!-- HEADER ROW -->
         <Head>
             <Row>
-                {#each Object.keys(sortedData[0]) as header, i}
+                {#each Object.keys(data[0]) as header, i}
                     {#if i == 0 }
                         <Cell columnId={header} style="width: 100%;">
                             <Label>{header}</Label>
@@ -49,9 +47,9 @@
         </Head>
         <!-- DATA ROWS -->
             <Body>
-            {#each Object.entries(sortedData) as [id, obj] }
+            {#each Object.entries(data) as [id, obj] }
                 {#if id == activeRowIndex}
-                    <Row id="highlight" bind:this={highlightRow}>
+                    <Row id="highlight">
                         {#each Object.values(obj) as val }
                             <Cell class="highlight">{val}</Cell>
                         {/each}
