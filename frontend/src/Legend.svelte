@@ -10,12 +10,14 @@
         context: string
         checked: boolean
     }
+
     // ContextResourceQuery fetches a list of contexts from the api
     class ContextResourceQuery extends BaseQuery {
         query = gql`query RootQuery {
             contexts
         }`
     }
+
     const contextQuery = new ContextResourceQuery
     let clusterQStore = contextQuery.executeQuery()
     let clusters
@@ -82,7 +84,7 @@
 
 <div>
     <fieldset>
-        <legend>Kubernetes Clusters</legend>
+        <legend>Local Contexts</legend>
         {#if $clusterQStore.data}
             <div>
                 {#each clusterArr as {id, context, checked}}
@@ -100,3 +102,14 @@
         {/if}
     </fieldset>
 </div>
+
+<style>
+    fieldset {
+        width: 400px;
+        border-radius: .15em;
+        border: 1px solid #000000;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>

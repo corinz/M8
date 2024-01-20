@@ -1,5 +1,4 @@
 <script lang="ts">
-    import DataTable, {Body, Cell, Head, Label, Row} from '@smui/data-table'
     import {dataStore} from "./jsonTable"
 
     let data, activeRowIndex
@@ -19,7 +18,7 @@
         }
     }
 
-    window.addEventListener("keydown", function(e) {
+    window.addEventListener("keydown", function (e) {
         handleKeyDown(e)
     });
 
@@ -28,51 +27,73 @@
 {#if (!data)}
     Dataset is empty
 {:else if data.length > 0}
-    <DataTable stickyHeader style="width: 100%;">
+    <table>
         <!-- HEADER ROW -->
-        <Head>
-            <Row>
-                {#each Object.keys(data[0]) as header, i}
-                    {#if i == 0 }
-                        <Cell columnId={header} style="width: 100%;">
-                            <Label>{header}</Label>
-                        </Cell>
-                    {:else }
-                        <Cell columnId={header}>
-                            <Label>{header}</Label>
-                        </Cell>
-                    {/if}
-                {/each}
-            </Row>
-        </Head>
-        <!-- DATA ROWS -->
-            <Body>
-            {#each Object.entries(data) as [id, obj] }
-                {#if id == activeRowIndex}
-                    <Row id="highlight">
-                        {#each Object.values(obj) as val }
-                            <Cell class="highlight">{val}</Cell>
-                        {/each}
-                    </Row>
+        <thead>
+        <tr>
+            {#each Object.keys(data[0]) as header, i}
+                {#if i == 0 }
+                    <th columnId={header}>
+                        {header}
+                    </th>
                 {:else }
-                    <Row>
-                        {#each Object.values(obj) as val }
-                            <Cell>{val}</Cell>
-                        {/each}
-                    </Row>
+                    <th columnId={header}>
+                        {header}
+                    </th>
                 {/if}
             {/each}
-            </Body>
-    </DataTable>
+        </tr>
+        </thead>
+        <!-- DATA ROWS -->
+        <tbody>
+        {#each Object.entries(data) as [id, obj] }
+            {#if id == activeRowIndex}
+                <tr id="highlight">
+                    {#each Object.values(obj) as val }
+                        <td class="highlight">{val}</td>
+                    {/each}
+                </tr>
+            {:else }
+                <tr>
+                    {#each Object.values(obj) as val }
+                        <td>{val}</td>
+                    {/each}
+                </tr>
+            {/if}
+        {/each}
+        </tbody>
+    </table>
 {/if}
 
 <style>
-    :global(.highlight) {
-        background-color: rgba(109, 119, 131, 0.12);
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        table-layout: auto;
+        overflow-y: auto;
     }
-    .scroll {
-        /*TODO: this setting enables horizontal scrolling for the table */
-        /*but disables the sticky header*/
-        overflow-x: auto;
+
+    td {
+        padding: 6px;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100px;
+    }
+
+    /*TODO: fix sticky header in desktop app*/
+    th {
+        padding: 6px;
+        text-align: left;
+        position: sticky;
+        top: 70px;
+        /*z-index: 1;*/
+        background-color: #FFFFFFFF;
+    }
+
+    :global(.highlight) {
+        background-color: rgba(60, 115, 176, 0.2)
     }
 </style>

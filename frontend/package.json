@@ -10,7 +10,6 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
-    "@smui/data-table": "^7.0.0-beta.14",
     "@sveltejs/vite-plugin-svelte": "^1.0.1",
     "@tsconfig/svelte": "^3.0.0",
     "@types/underscore": "^1.11.14",
@@ -24,7 +23,6 @@
     "@urql/core": "^4.1.1",
     "@urql/svelte": "^4.0.4",
     "fuse.js": "^7.0.0",
-    "svelte-material-ui": "^7.0.0-beta.14",
     "underscore": "^1.13.6"
   }
 }
