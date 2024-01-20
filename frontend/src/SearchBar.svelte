@@ -1,6 +1,4 @@
 <script lang="ts">
-    import {Input} from '@smui/textfield';
-    import Paper from '@smui/paper';
     import Fuse from 'fuse.js'
     import {focusedElement} from "./focus"
     import _ from 'underscore';
@@ -46,10 +44,8 @@
                 // resourceQStore is not guaranteed to have completed here
                 tableObject = $resourceQStore.data ? getResources.transform($resourceQStore.data) : null
             }
-        } else { //display contexts
-            tableObject = $allContextStore ? $allContextStore.map(r => {
-                return {"Available Contexts": r}
-            }) : [{"": "Fetching..."}]
+        } else { // default is empty table
+            tableObject = []
         }
     }
 
@@ -98,7 +94,7 @@
         }
     }
 
-    window.addEventListener("keydown", function(e) {
+    window.addEventListener("keydown", function (e) {
         handleKeyDown(e)
     }, false);
 
@@ -119,9 +115,10 @@
     }
 </script>
 
-<div style="padding: 10px 0">
-    <Paper elevation={6}>
-        <Input
+<div class="sticky" style="padding-top: 10px; padding-bottom: 10px;">
+    <fieldset>
+        <legend>Search</legend>
+        <input
                 id="search"
                 bind:value={searchBarInput}
                 on:input={debouncedHandleInput}
@@ -129,6 +126,32 @@
                 type="text"
                 autocomplete="off"
         />
-        {numResults}
-    </Paper>
+        {numResults} results
+    </fieldset>
 </div>
+
+<style>
+    fieldset {
+        width: 400px;
+        border-radius: .15em;
+        border: 1px solid #000000;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    div.sticky {
+        position: sticky;
+        top: 0;
+        background-color: white;
+    }
+
+    input {
+        width: 300px;
+        height: 8px;
+        border: none;
+        border-right: 1px solid #000000;
+        outline: none;
+        padding: 4px;
+    }
+
+</style>
