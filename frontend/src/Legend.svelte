@@ -106,10 +106,10 @@
 <style>
     fieldset {
         width: 400px;
-        border-radius: .15em;
-        border: 1px solid #000000;
+        max-height: 90px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        overflow-y: auto;
     }
 </style>

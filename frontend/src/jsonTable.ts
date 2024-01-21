@@ -3,4 +3,6 @@ export interface tableObject {
 }
 
 import {writable} from "svelte/store"
-export const dataStore = writable({"hello": "moto"})
+
+export const tableDataStore = writable({})
+export const searchTerm = writable("")

@@ -1,9 +1,9 @@
 <script lang="ts">
-    import {dataStore} from "./jsonTable"
+    import {tableDataStore, searchTerm} from "./jsonTable"
 
     let data, activeRowIndex
     $: {
-        data = $dataStore
+        data = $tableDataStore
         activeRowIndex = 0
     }
 
@@ -27,55 +27,58 @@
 {#if (!data)}
     Dataset is empty
 {:else if data.length > 0}
-    <table>
-        <!-- HEADER ROW -->
-        <thead>
-        <tr>
-            {#each Object.keys(data[0]) as header, i}
-                {#if i == 0 }
-                    <th columnId={header}>
-                        {header}
-                    </th>
+    <fieldset>
+        <legend>{$searchTerm}s</legend>
+        <table>
+            <!-- HEADER ROW -->
+            <thead>
+            <tr>
+                {#each Object.keys(data[0]) as header, i}
+                    {#if i == 0 }
+                        <th columnId={header}>
+                            {header}
+                        </th>
+                    {:else }
+                        <th columnId={header}>
+                            {header}
+                        </th>
+                    {/if}
+                {/each}
+            </tr>
+            </thead>
+            <!-- DATA ROWS -->
+            <tbody>
+            {#each Object.entries(data) as [id, obj] }
+                {#if id == activeRowIndex}
+                    <tr id="highlight">
+                        {#each Object.values(obj) as val }
+                            <td class="highlight">{val}</td>
+                        {/each}
+                    </tr>
                 {:else }
-                    <th columnId={header}>
-                        {header}
-                    </th>
+                    <tr>
+                        {#each Object.values(obj) as val }
+                            <td>{val}</td>
+                        {/each}
+                    </tr>
                 {/if}
             {/each}
-        </tr>
-        </thead>
-        <!-- DATA ROWS -->
-        <tbody>
-        {#each Object.entries(data) as [id, obj] }
-            {#if id == activeRowIndex}
-                <tr id="highlight">
-                    {#each Object.values(obj) as val }
-                        <td class="highlight">{val}</td>
-                    {/each}
-                </tr>
-            {:else }
-                <tr>
-                    {#each Object.values(obj) as val }
-                        <td>{val}</td>
-                    {/each}
-                </tr>
-            {/if}
-        {/each}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </fieldset>
 {/if}
 
 <style>
     table {
         width: 100%;
-        border-collapse: collapse;
+        /*border-collapse: collapse;*/
         overflow: hidden;
         table-layout: auto;
         overflow-y: auto;
     }
 
     td {
-        padding: 6px;
+        padding: 4px;
         text-align: left;
         white-space: nowrap;
         overflow: hidden;
@@ -87,10 +90,10 @@
     th {
         padding: 6px;
         text-align: left;
-        position: sticky;
         top: 70px;
+        color: #1988d9;
+        font-weight: normal;
         /*z-index: 1;*/
-        background-color: #FFFFFFFF;
     }
 
     :global(.highlight) {

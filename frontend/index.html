@@ -1,12 +1,33 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>m8</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script src="./src/main.ts" type="module"></script>
-  </body>
+</head>
+<body>
+<div class="main" id="app"></div>
+<script src="./src/main.ts" type="module"></script>
+</body>
+
+<style>
+    body, input {
+        color: white;
+        font-family: monospace;
+        letter-spacing: -.05em;
+        background-color: rgba(31, 31, 31, 1);
+    }
+
+    div.main {
+        padding: 5px;
+    }
+
+    fieldset {
+        border-radius: .15em;
+        border: 1px solid rgba(192, 176, 176, 0.8);
+        box-shadow: 2px 2px 0 rgba(255, 255, 255, 0.5);
+
+    }
+
+</style>
 </html>
