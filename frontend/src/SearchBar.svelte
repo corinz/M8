@@ -104,10 +104,10 @@
 
     $: switch (searchEventKey) {
         case "/":
-            placeholder = "filter"
+            placeholder = "filter e.g. /coredns"
             break
         case ":":
-            placeholder = "search"
+            placeholder = "search e.g. :pod"
             break
         default:
             placeholder = "Press : to search or / to filter"
