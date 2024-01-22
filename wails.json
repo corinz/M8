@@ -7,7 +7,6 @@
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {
-    "name": "Corin Ziyadeh",
-    "email": "corin.ziyadeh@zoro.com"
+    "name": "Corin Ziyadeh"
   }
 }

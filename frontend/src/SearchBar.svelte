@@ -3,12 +3,12 @@
     import {focusedElement} from "./focus"
     import _ from 'underscore';
     import {GqlResourceQuery} from "./resourceQuery.ts"
-    import {activeContextStore, allContextStore} from "./activeContextStore";
-    import {dataStore} from "./jsonTable";
+    import {activeContextStore} from "./activeContextStore";
+    import {tableDataStore, searchTerm} from "./jsonTable";
 
     // search and filter and ui
     export let searchEventKey: string
-    let searchBarInput: string = "" // TODO: if the first search is broken, others are broken too
+    let searchBarInput: string = ""
     let placeholder
     const filterOptions = {
         keys: ['name', 'Name', 'namespace', 'Namespace'],
@@ -20,6 +20,7 @@
 
     // Graphql
     let queryVars = {"name": "pod"}
+    searchTerm.set("pod") // sets the legend title
     let getResources = new GqlResourceQuery
     let filteredTableObject = null
 
@@ -54,6 +55,9 @@
         if (searchBarInput !== "") {
             const name = searchBarInput
             queryVars = {name}
+
+            // sets the legend title
+            searchTerm.set(searchBarInput)
         }
         // Clear search bar
         searchBarInput = ""
@@ -111,11 +115,11 @@
 
     $: if (!queryFetching && !queryError) {
         // set store with fetched data
-        dataStore.set(tableObject)
+        tableDataStore.set(tableObject)
     }
 </script>
 
-<div class="sticky" style="padding-top: 10px; padding-bottom: 10px;">
+<div>
     <fieldset>
         <legend>Search</legend>
         <input
@@ -131,27 +135,23 @@
 </div>
 
 <style>
-    fieldset {
-        width: 400px;
-        border-radius: .15em;
-        border: 1px solid #000000;
-        white-space: nowrap;
-        overflow: hidden;
+    div {
+        padding-bottom: 15px;
+        padding-top: 15px;
     }
 
-    div.sticky {
-        position: sticky;
-        top: 0;
-        background-color: white;
+    fieldset {
+        width: 400px;
+        white-space: nowrap;
+        overflow: hidden;
+        background-color: rgba(31, 31, 31, 1);
     }
 
     input {
         width: 300px;
-        height: 8px;
+        height: 12px;
         border: none;
         border-right: 1px solid #000000;
         outline: none;
-        padding: 4px;
     }
-
 </style>

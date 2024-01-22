@@ -1,9 +1,9 @@
 <script lang="ts">
-    import {dataStore} from "./jsonTable"
+    import {tableDataStore, searchTerm} from "./jsonTable"
 
     let data, activeRowIndex
     $: {
-        data = $dataStore
+        data = $tableDataStore
         activeRowIndex = 0
     }
 
@@ -27,55 +27,61 @@
 {#if (!data)}
     Dataset is empty
 {:else if data.length > 0}
-    <table>
-        <!-- HEADER ROW -->
-        <thead>
-        <tr>
-            {#each Object.keys(data[0]) as header, i}
-                {#if i == 0 }
-                    <th columnId={header}>
-                        {header}
-                    </th>
-                {:else }
-                    <th columnId={header}>
-                        {header}
-                    </th>
-                {/if}
-            {/each}
-        </tr>
-        </thead>
-        <!-- DATA ROWS -->
-        <tbody>
-        {#each Object.entries(data) as [id, obj] }
-            {#if id == activeRowIndex}
-                <tr id="highlight">
-                    {#each Object.values(obj) as val }
-                        <td class="highlight">{val}</td>
-                    {/each}
-                </tr>
-            {:else }
+    <fieldset>
+        <legend>{$searchTerm.charAt(0).toUpperCase() + $searchTerm.slice(1)}s</legend>
+        <div class="scrollable-content">
+            <table>
+                <!-- HEADER ROW -->
+                <thead>
                 <tr>
-                    {#each Object.values(obj) as val }
-                        <td>{val}</td>
+                    {#each Object.keys(data[0]) as header, i}
+                        {#if i == 0 }
+                            <th columnId={header}>
+                                {header}
+                            </th>
+                        {:else }
+                            <th columnId={header}>
+                                {header}
+                            </th>
+                        {/if}
                     {/each}
                 </tr>
-            {/if}
-        {/each}
-        </tbody>
-    </table>
+                </thead>
+                <!-- DATA ROWS -->
+                <tbody>
+                {#each Object.entries(data) as [id, obj] }
+                    {#if id == activeRowIndex}
+                        <tr id="highlight">
+                            {#each Object.values(obj) as val }
+                                <td class="highlight">{val}</td>
+                            {/each}
+                        </tr>
+                    {:else }
+                        <tr>
+                            {#each Object.values(obj) as val }
+                                <td>{val}</td>
+                            {/each}
+                        </tr>
+                    {/if}
+                {/each}
+                </tbody>
+            </table>
+        </div>
+    </fieldset>
 {/if}
 
 <style>
     table {
         width: 100%;
-        border-collapse: collapse;
-        overflow: hidden;
-        table-layout: auto;
-        overflow-y: auto;
+    }
+
+    .scrollable-content {
+        max-height: 300px; /* Set the maximum height for scrollability */
+        overflow-y: hidden; /* Enable vertical scrolling if content exceeds the height */
     }
 
     td {
-        padding: 6px;
+        padding: 4px;
         text-align: left;
         white-space: nowrap;
         overflow: hidden;
@@ -83,14 +89,16 @@
         max-width: 100px;
     }
 
-    /*TODO: fix sticky header in desktop app*/
     th {
         padding: 6px;
         text-align: left;
+        color: #1988d9;
+        font-weight: normal;
+
+        /* required for sticky header */
+        background-color: rgba(31, 31, 31, 1);
         position: sticky;
-        top: 70px;
-        /*z-index: 1;*/
-        background-color: #FFFFFFFF;
+        top: 2px;
     }
 
     :global(.highlight) {
