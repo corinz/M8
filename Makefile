@@ -28,7 +28,7 @@ build-cluster:
 
 requirements:
 	# Check if all required commands are installed
-	REQUIRED_CLI=("go" "kind" "docker") && \
+	REQUIRED_CLI=("go" "kind" "docker" "wails") && \
 	for command in "$${REQUIRED_CLI[@]}"; \
   do \
 	    if ! command -v "$$command" &> /dev/null; \

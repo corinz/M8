@@ -1,24 +1,26 @@
 ![logo](./docs/logo.svg)
 
-A desktop app implementation of a Kubernetes client viewer, that stands on the shoulders of framework giants Svelte and Wails.
+A desktop app Kubernetes client viewer, that stands on the shoulders of framework giants Svelte and Wails.
 
+This project is under active development
 Here's a list of things that work:
-1. A working UI/desktop application
-2. A working backend that connects to a local cluster
-3. A working GraphQL API and the infrastructure to extend it
-4. A bunch of UI stuff broke in a recent commit, and I haven't gotten back to fixing it yet...
+1. A dead simple UI/desktop application that features cross-context resource querying
+2. A backend that connects to any cluster in your ~/.kube/config
+3. A working GraphQL API with an Apollo client
+
+![screenshot](./docs/screenshot.png)
 
 ## Goals
-1. A good looking, keyboard driven UI that ain't slow
-2. Ability to issue complex api queries *across* clusters
+1. A good looking, fast, keyboard driven UI for front-line Kubernets admins
+2. Ability to issue resource queries *across* clusters
 
 ## Getting Started
-1. Install requirements
+1. Install requirements below
 2. Run `make` or `make run-with-deps` if it's your first time
 3. Navigate to http://localhost:8080/sandbox to interact with the GraphQL API via Apollo
-4. Or run `wails dev` and follow the prompts see below
+4. Or run `wails dev` and follow the prompts. See below
 
-## Requirements
+## Requirements for dev
 1. Go
 2. Docker
 3. Kind
