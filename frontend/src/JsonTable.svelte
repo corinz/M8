@@ -28,53 +28,56 @@
     Dataset is empty
 {:else if data.length > 0}
     <fieldset>
-        <legend>{$searchTerm}s</legend>
-        <table>
-            <!-- HEADER ROW -->
-            <thead>
-            <tr>
-                {#each Object.keys(data[0]) as header, i}
-                    {#if i == 0 }
-                        <th columnId={header}>
-                            {header}
-                        </th>
+        <legend>{$searchTerm.charAt(0).toUpperCase() + $searchTerm.slice(1)}s</legend>
+        <div class="scrollable-content">
+            <table>
+                <!-- HEADER ROW -->
+                <thead>
+                <tr>
+                    {#each Object.keys(data[0]) as header, i}
+                        {#if i == 0 }
+                            <th columnId={header}>
+                                {header}
+                            </th>
+                        {:else }
+                            <th columnId={header}>
+                                {header}
+                            </th>
+                        {/if}
+                    {/each}
+                </tr>
+                </thead>
+                <!-- DATA ROWS -->
+                <tbody>
+                {#each Object.entries(data) as [id, obj] }
+                    {#if id == activeRowIndex}
+                        <tr id="highlight">
+                            {#each Object.values(obj) as val }
+                                <td class="highlight">{val}</td>
+                            {/each}
+                        </tr>
                     {:else }
-                        <th columnId={header}>
-                            {header}
-                        </th>
+                        <tr>
+                            {#each Object.values(obj) as val }
+                                <td>{val}</td>
+                            {/each}
+                        </tr>
                     {/if}
                 {/each}
-            </tr>
-            </thead>
-            <!-- DATA ROWS -->
-            <tbody>
-            {#each Object.entries(data) as [id, obj] }
-                {#if id == activeRowIndex}
-                    <tr id="highlight">
-                        {#each Object.values(obj) as val }
-                            <td class="highlight">{val}</td>
-                        {/each}
-                    </tr>
-                {:else }
-                    <tr>
-                        {#each Object.values(obj) as val }
-                            <td>{val}</td>
-                        {/each}
-                    </tr>
-                {/if}
-            {/each}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </fieldset>
 {/if}
 
 <style>
     table {
         width: 100%;
-        /*border-collapse: collapse;*/
-        overflow: hidden;
-        table-layout: auto;
-        overflow-y: auto;
+    }
+
+    .scrollable-content {
+        max-height: 300px; /* Set the maximum height for scrollability */
+        overflow-y: hidden; /* Enable vertical scrolling if content exceeds the height */
     }
 
     td {
@@ -86,14 +89,16 @@
         max-width: 100px;
     }
 
-    /*TODO: fix sticky header in desktop app*/
     th {
         padding: 6px;
         text-align: left;
-        top: 70px;
         color: #1988d9;
         font-weight: normal;
-        /*z-index: 1;*/
+
+        /* required for sticky header */
+        background-color: rgba(31, 31, 31, 1);
+        position: sticky;
+        top: 2px;
     }
 
     :global(.highlight) {

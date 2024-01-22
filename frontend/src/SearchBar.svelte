@@ -119,7 +119,7 @@
     }
 </script>
 
-<div class="sticky">
+<div>
     <fieldset>
         <legend>Search</legend>
         <input
@@ -135,6 +135,11 @@
 </div>
 
 <style>
+    div {
+        padding-bottom: 15px;
+        padding-top: 15px;
+    }
+
     fieldset {
         width: 400px;
         white-space: nowrap;
@@ -142,18 +147,9 @@
         background-color: rgba(31, 31, 31, 1);
     }
 
-
-    div.sticky {
-        width: 430px;
-        position: sticky;
-        top: 0;
-        padding-bottom: 10px;
-        padding-top: 10px;
-    }
-
     input {
         width: 300px;
-        height: 8px;
+        height: 12px;
         border: none;
         border-right: 1px solid #000000;
         outline: none;
