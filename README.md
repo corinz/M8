@@ -9,16 +9,15 @@ Here's a list of things that work:
 3. A working GraphQL API with an Apollo client
 
 ![screenshot](./docs/screenshot.png)
-
 ## Goals
 1. A good looking, fast, keyboard driven UI for front-line Kubernets admins
 2. Ability to issue resource queries *across* clusters
 
 ## Getting Started
 1. Install requirements below
-2. Run `make` or `make run-with-deps` if it's your first time
-3. Navigate to http://localhost:8080/sandbox to interact with the GraphQL API via Apollo
-4. Or run `wails dev` and follow the prompts. See below
+2. Headless Mode: run `make` or `make run-with-deps` if it's your first time
+3. Desktop Mode: run `wails dev` and follow the prompts. See below for more details
+4. Navigate to http://localhost:8080/sandbox to interact with the GraphQL API via Apollo
 
 ## Requirements for dev
 1. Go
