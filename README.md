@@ -11,19 +11,14 @@ Here's a list of things that work:
 3. A working GraphQL API with an Apollo client
 
 Here's a list of future features:
-1. Searching resources by short name, by plural noun, or fuzzy
-2. Namespace filtering
-3. Sorting columns lexicographically
-4. Cluster info/stats display
-5. Displaying/handling complex datastructures in the UI
-6. Viewing raw yaml, events, and logs
-7. Advanced features
-    - responsive UI
-    - shell/exec
-    - port forwarding
-    - edit resources
-    - breadcrumb nav
-    - graphql query builder for advanced queries
+1. Unit tests
+2. Searching resources by short name, by plural noun, or fuzzy
+3. Namespace filtering
+4. Sorting columns lexicographically
+5. Cluster info/stats display
+6. Displaying/handling complex datastructures in the UI
+7. Viewing raw yaml, events, and logs
+8. Advanced features: responsive UI, shell/exec, port forwarding, edit resources, breadcrumb nav, graphql query builder for advanced queries
 
 **Contributions for these features are welcome!**
 
@@ -35,7 +30,6 @@ Here's a list of future features:
 2. Headless Mode: run `make` or `make run-with-deps` if it's your first time
 3. Desktop Mode: run `wails dev` and follow the prompts. See below for more details
 4. Navigate to http://localhost:8080/sandbox to interact with the GraphQL API via Apollo
-
 
 ### Requirements
 1. Go
