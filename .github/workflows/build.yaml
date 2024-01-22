@@ -1,6 +1,10 @@
 name: Wails build
 
-on: [push, pull_request]
+on:
+  pull_request:
+    types: [opened, reopened]
+  push:
+    tags: ['*']
 
 jobs:
   build:
