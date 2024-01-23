@@ -2,7 +2,7 @@ name: Wails build
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
   push:
     tags: ['*']
 
@@ -12,14 +12,15 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          {name: wailsTest, platform: linux/amd64, os: ubuntu-latest},
-          {name: wailsTest, platform: windows/amd64, os: windows-latest},
-          {name: wailsTest, platform: darwin/universal, os: macos-latest}
+          {name: m8-linux-amd64, platform: linux/amd64, os: ubuntu-latest},
+          {name: m8-windows-amd64, platform: windows/amd64, os: windows-latest},
+          {name: m8-darwin-universal, platform: darwin/universal, os: macos-latest}
         ]
     runs-on: ${{ matrix.build.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dAppServer/wails-build-action@v2.2
         with:
+          wails-version: v2.5.1
           build-name: ${{ matrix.build.name }}
           build-platform: ${{ matrix.build.platform }}
