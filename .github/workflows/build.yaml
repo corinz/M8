@@ -12,9 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         build: [
-          {name: wailsTest, platform: linux/amd64, os: ubuntu-latest},
-          {name: wailsTest, platform: windows/amd64, os: windows-latest},
-          {name: wailsTest, platform: darwin/universal, os: macos-latest}
+          {name: m8-linux-amd64, platform: linux/amd64, os: ubuntu-latest},
+          {name: m8-windows-amd64, platform: windows/amd64, os: windows-latest},
+          {name: m8-darwin-universal, platform: darwin/universal, os: macos-latest}
         ]
     runs-on: ${{ matrix.build.os }}
     steps:
