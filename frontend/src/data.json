@@ -1,0 +1,49 @@
+{ "resources": [   {
+        "kind": "Pod",
+        "metadata": {
+          "name": "coredns-5d78c9869d-7fw49"
+        }
+      },
+      {
+        "kind": "Pod",
+        "metadata": {
+          "name": "coredns-5d78c9869d-7s9pz"
+        }
+      },
+      {
+        "kind": "Pod",
+        "metadata": {
+          "name": "etcd-kind-control-plane"
+        }
+      },
+      {
+        "kind": "Pod",
+        "metadata": {
+          "name": "kindnet-qgmgd"
+        }
+      },
+      {
+        "kind": "Pod",
+        "metadata": {
+          "name": "kube-apiserver-kind-control-plane"
+        }
+      },
+      {
+        "kind": "Pod",
+        "metadata": {
+          "name": "kube-controller-manager-kind-control-plane"
+        }
+      },
+      {
+        "kind": "Pod",
+        "metadata": {
+          "name": "kube-proxy-cdmv7555"
+        }
+      },
+      {
+        "kind": "Pod",
+        "metadata": {
+          "name": "kube-scheduler-kind-control-plane"
+        }
+      }
+  ]}

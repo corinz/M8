@@ -20,9 +20,12 @@
     "vite": "^3.0.7"
   },
   "dependencies": {
+    "@langchain/core": "^0.1.17",
+    "@langchain/openai": "^0.0.12",
     "@urql/core": "^4.1.1",
     "@urql/svelte": "^4.0.4",
     "fuse.js": "^7.0.0",
+    "langchain": "^0.1.5",
     "underscore": "^1.13.6"
   }
 }
