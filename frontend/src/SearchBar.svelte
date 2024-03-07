@@ -1,52 +1,72 @@
 <script lang="ts">
-    import Fuse from 'fuse.js'
     import {focusedElement} from "./focus"
     import _ from 'underscore';
-    import {GqlResourceQuery} from "./resourceQuery.ts"
     import {activeContextStore} from "./activeContextStore";
-    import {tableDataStore, searchTerm} from "./jsonTable";
+    import {tableDataStore, searchTerm, filterTerm} from "./jsonTable";
 
-    // search and filter and ui
+    // search and ui
     export let searchEventKey: string
     let searchBarInput: string = ""
     let placeholder
-    const filterOptions = {
-        keys: ['name', 'Name', 'namespace', 'Namespace'],
-        threshold: 0.40 // 0 = perfect match, 1 = indiscriminate
-    }
+
     $: debounceDelay = searchEventKey === '/' ? 600 : 850
     $: debouncedHandleInput = _.debounce(handleInput, debounceDelay)
     focusedElement.set(document.getElementById("search"))
 
     // Graphql
     let queryVars = {"name": "pod"}
-    searchTerm.set("pod") // sets the legend title
-    let getResources = new GqlResourceQuery
-    let filteredTableObject = null
+    searchTerm.set("pod")
 
-    // display logic
-    let resourceQStore, tableObject, queryError, queryFetching, activeContextsArr
-    $: numResults = tableObject == null ? 0 : tableObject.length
-    $: if ($activeContextStore) {
-        // Convert array (map is used by Legend.svelte for ease)
-        activeContextsArr = [...$activeContextStore.keys()]
-        if (activeContextsArr.length > 0) {
-            resourceQStore = getResources.executeQuery(activeContextsArr, queryVars)
+    // When contexts are added or removed
+    $: $activeContextStore && execActiveContexts()
 
-            // update the UI w/ proper messaging
-            queryFetching = $resourceQStore.fetching
-            queryError = $resourceQStore.error
+    // TODO: when the search criteria is changed
+    // might need to eliminate the queryIssued flag
+    // $: $searchTerm && execActiveContexts()
 
-            if (queryError) {
-                console.log(queryError.message)
-            } else if (filteredTableObject) { // filter takes precedence
-                tableObject = filteredTableObject
-            } else {
-                // resourceQStore is not guaranteed to have completed here
-                tableObject = $resourceQStore.data ? getResources.transform($resourceQStore.data) : null
+    // finds active contexts that have not been queried
+    function execActiveContexts() {
+        $activeContextStore.forEach((queryObject, contextName) => {
+            if (!queryObject.queryIssued && contextName != "" && contextName != null) {
+                queryObject.executeQuery(queryVars)
+                fetchContextData(contextName)
             }
-        } else { // default is empty table
-            tableObject = []
+        })
+    }
+
+    // fetches data from existing query store
+    async function fetchContextData(contextName) {
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+        let retries = 0
+
+        let fetching, error, data
+        $activeContextStore.get(contextName).queryStore.subscribe(store => {
+            fetching = store.fetching
+            error = store.error
+            data = store.data
+        })
+
+        while (retries < 10) {
+            if (fetching) {
+                console.log("INFO: GraphQL Query Store fetching: ", contextName)
+            } else if (error) {
+                console.log("ERROR: GraphQL Query Store: ", contextName)
+                throw new Error(error)
+            } else if (data) {
+                // update tableDataStore with fetched data
+                tableDataStore.update(m => {
+                    m.set(contextName, $activeContextStore.get(contextName).transform(data))
+                    return m
+                })
+                $activeContextStore.get(contextName).queryIssued = true
+                return
+            }
+            if (retries >= 9) {
+                console.log("INFO: GraphQL Query Store retries exhausted: ", contextName)
+                return
+            }
+            retries++
+            await delay(500)
         }
     }
 
@@ -63,22 +83,12 @@
         searchBarInput = ""
     }
 
-    function filter(): void {
-        if (searchBarInput == "") {
-            filteredTableObject = null
-        } else {
-            const fuse = new Fuse(tableObject, filterOptions)
-            let filteredTableObjectMap = fuse.search(searchBarInput)
-            filteredTableObject = filteredTableObjectMap.map((idx) => idx.item)
-        }
-    }
-
     // Handles dyanmic input
     function handleInput(): void {
         if (searchEventKey === ':') {
             search()
         } else if (searchEventKey === '/') {
-            filter()
+            filterTerm.set(searchBarInput)
         }
     }
 
@@ -112,11 +122,6 @@
         default:
             placeholder = "Press : to search or / to filter"
     }
-
-    $: if (!queryFetching && !queryError) {
-        // set store with fetched data
-        tableDataStore.set(tableObject)
-    }
 </script>
 
 <div>
@@ -130,7 +135,6 @@
                 type="text"
                 autocomplete="off"
         />
-        {numResults} results
     </fieldset>
 </div>
 

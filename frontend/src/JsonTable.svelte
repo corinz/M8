@@ -1,15 +1,15 @@
 <script lang="ts">
-    import {tableDataStore, searchTerm} from "./jsonTable"
+    import {searchTerm, filterTerm, tableDataStore, filter} from "./jsonTable"
 
-    let data, activeRowIndex
-    $: {
-        data = $tableDataStore
-        activeRowIndex = 0
-    }
+    let activeRowIndex = 0, filteredData, displayedData
+    $: data = Array.from($tableDataStore.values()).flatMap(arr => arr)
+    $: displayedData = filteredData ? filteredData : data
 
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
-        document.getElementById('highlight').scrollIntoView({behavior: "auto", block: "center", inline: "nearest"});
-
+        let element = document.getElementById('highlight')
+        if (element) {
+            element.scrollIntoView({behavior: "auto", block: "center", inline: "nearest"})
+        }
         event = event as KeyboardEvent;
         if (event.key === 'ArrowUp' || event.key === 'Up') {
             activeRowIndex = Math.max(0, activeRowIndex - 1);
@@ -18,38 +18,42 @@
         }
     }
 
+    filterTerm.subscribe( term => {
+        if (term == "" || term == null){
+            filteredData = null
+            return
+        }
+        filteredData = filter(data, term)
+    })
+
     window.addEventListener("keydown", function (e) {
         handleKeyDown(e)
     });
 
 </script>
 
-{#if (!data)}
+{#if (!displayedData)}
+    Dataset does not exist
+{:else if displayedData.length === 0}
     Dataset is empty
-{:else if data.length > 0}
+{:else if displayedData.length > 0}
     <fieldset>
-        <legend>{$searchTerm.charAt(0).toUpperCase() + $searchTerm.slice(1)}s</legend>
+        <legend>{$searchTerm.charAt(0).toUpperCase() + $searchTerm.slice(1) + "s" + "(" + displayedData.length + ")"} </legend>
         <div class="scrollable-content">
             <table>
                 <!-- HEADER ROW -->
                 <thead>
                 <tr>
-                    {#each Object.keys(data[0]) as header, i}
-                        {#if i == 0 }
+                    {#each Object.keys(displayedData[0]) as header}
                             <th columnId={header}>
                                 {header}
                             </th>
-                        {:else }
-                            <th columnId={header}>
-                                {header}
-                            </th>
-                        {/if}
                     {/each}
                 </tr>
                 </thead>
                 <!-- DATA ROWS -->
                 <tbody>
-                {#each Object.entries(data) as [id, obj] }
+                {#each Object.entries(displayedData) as [id, obj] }
                     {#if id == activeRowIndex}
                         <tr id="highlight">
                             {#each Object.values(obj) as val }
