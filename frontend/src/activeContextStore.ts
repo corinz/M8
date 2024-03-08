@@ -27,6 +27,61 @@ addContextStore.subscribe((context) => {
     })
 })
 
+// finds active contexts that have not been queried
+export async function execActiveContexts(activeContextMap, queryVars, execAll) {
+    if (execAll) {
+        activeContextMap.forEach((queryObject, contextName) => {
+            if (contextName != "" && contextName != null) {
+                queryObject.executeQuery(queryVars)
+                fetchContextData(queryObject)
+            }
+        })
+    } else {
+        activeContextMap.forEach((queryObject, contextName) => {
+            if (!queryObject.queryIssued && contextName != "" && contextName != null) {
+                queryObject.executeQuery(queryVars)
+                fetchContextData(queryObject)
+            }
+        })
+    }
+}
+
+// fetches data from existing query store
+async function fetchContextData(queryObject) {
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+    let retries = 0
+    let queryStore = queryObject.queryStore
+    let fetching, error, data
+    queryStore.subscribe(store => {
+        fetching = store.fetching
+        error = store.error
+        data = store.data
+    })
+
+    while (retries < 40) {
+        if (fetching) {
+            console.log("INFO: GraphQL Query Store fetching: ", queryObject.contextName)
+        } else if (error) {
+            console.log("ERROR: GraphQL Query Store: ", queryObject.contextName)
+            throw new Error(error)
+        } else if (data) {
+            // update tableDataStore with fetched data
+            tableDataStore.update(m => {
+                m.set(queryObject.contextName, queryObject.transform(data))
+                return m
+            })
+            queryObject.queryIssued = true
+            return
+        }
+        if (retries >= 39) {
+            console.log("INFO: GraphQL Query Store retries exhausted: ", queryObject.contextName)
+            return
+        }
+        retries++
+        await delay(250)
+    }
+}
+
 // removeContextStore manages the state of activeContextStore
 removeContextStore.subscribe((context) => {
     // TODO: it seems writable() calls subscribe with a null input

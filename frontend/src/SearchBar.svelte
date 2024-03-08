@@ -1,7 +1,7 @@
 <script lang="ts">
     import {focusedElement} from "./focus"
     import _ from 'underscore';
-    import {activeContextStore} from "./activeContextStore";
+    import {activeContextStore, execActiveContexts} from "./activeContextStore";
     import {tableDataStore, searchTerm, filterTerm} from "./jsonTable";
 
     // search and ui
@@ -17,58 +17,11 @@
     let queryVars = {"name": "pod"}
     searchTerm.set("pod")
 
-    // When contexts are added or removed
-    $: $activeContextStore && execActiveContexts()
+    // query all un-queried clusters
+    $: execActiveContexts($activeContextStore, queryVars, false)
 
-    // TODO: when the search criteria is changed
-    // might need to eliminate the queryIssued flag
-    // $: $searchTerm && execActiveContexts()
-
-    // finds active contexts that have not been queried
-    function execActiveContexts() {
-        $activeContextStore.forEach((queryObject, contextName) => {
-            if (!queryObject.queryIssued && contextName != "" && contextName != null) {
-                queryObject.executeQuery(queryVars)
-                fetchContextData(contextName)
-            }
-        })
-    }
-
-    // fetches data from existing query store
-    async function fetchContextData(contextName) {
-        const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-        let retries = 0
-
-        let fetching, error, data
-        $activeContextStore.get(contextName).queryStore.subscribe(store => {
-            fetching = store.fetching
-            error = store.error
-            data = store.data
-        })
-
-        while (retries < 10) {
-            if (fetching) {
-                console.log("INFO: GraphQL Query Store fetching: ", contextName)
-            } else if (error) {
-                console.log("ERROR: GraphQL Query Store: ", contextName)
-                throw new Error(error)
-            } else if (data) {
-                // update tableDataStore with fetched data
-                tableDataStore.update(m => {
-                    m.set(contextName, $activeContextStore.get(contextName).transform(data))
-                    return m
-                })
-                $activeContextStore.get(contextName).queryIssued = true
-                return
-            }
-            if (retries >= 9) {
-                console.log("INFO: GraphQL Query Store retries exhausted: ", contextName)
-                return
-            }
-            retries++
-            await delay(500)
-        }
-    }
+    // when search term changes, query all active contexts
+    $: $searchTerm && execActiveContexts($activeContextStore, queryVars, true)
 
     function search(): void {
         // Don't search blank input
