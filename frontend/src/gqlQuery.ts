@@ -1,4 +1,4 @@
-import type {AnyVariables, Client, OperationResult, TypedDocumentNode} from "@urql/svelte";
+import type {AnyVariables, Client, OperationResult, OperationResultStore, TypedDocumentNode} from "@urql/svelte";
 import {getContextClient, gql, queryStore} from "@urql/svelte";
 import type {tableObject} from "./jsonTable";
 
@@ -8,12 +8,14 @@ export class BaseQuery {
     readonly rootQueryString: string
     readonly bodyQueryString: string
     readonly footerQueryString: string
-    readonly client: Client
-    contexts: string[]
+    readonly contextName: string
+    client: Client
+    queryIssued: boolean = false
+    queryStore: OperationResultStore<any, any>
     enableTemplating: boolean
 
-    constructor(debug?: boolean) {
-        this.client = getContextClient()
+    constructor(contextName: string, debug?: boolean) {
+        this.contextName = contextName
         if (debug) {
             this.client.subscribeToDebugTarget(event => {
                 if (event.source === 'cacheExchange')
@@ -23,27 +25,27 @@ export class BaseQuery {
         }
     }
 
-    templateContexts(): TypedDocumentNode<any, AnyVariables> {
+    templateContext(): TypedDocumentNode<any, AnyVariables> {
         // body query templating
         let templatedBody: string = ``
-        for (let context of this.contexts) {
             // convert dashes to underscore for graphql compliance
-            let paramName = context.replaceAll("-", "_")
+            let paramName = this.contextName.replaceAll("-", "_")
             let firstTemplate  = this.bodyQueryString.replaceAll("PARAM-PLACEHOLDER", paramName)
-            let secondTemplate = firstTemplate.replaceAll("CONTEXT-PLACEHOLDER", context)
+            let secondTemplate = firstTemplate.replaceAll("CONTEXT-PLACEHOLDER", this.contextName)
             templatedBody += secondTemplate
-        }
 
-        // TODO: why does this execute twice on load?
         // console.log(this.rootQueryString + templatedBody + this.footerQueryString)
         return gql(this.rootQueryString + templatedBody + this.footerQueryString)
     }
 
-    executeQuery(contexts?: string[], variables?: any): any {
-        this.contexts = contexts
-        return queryStore({
+    executeQuery(variables?: any) {
+        if (!this.client){
+            // Note: getContextClient() must be called from within a svelte component!
+            this.client = getContextClient()
+        }
+        this.queryStore = queryStore({
             client: this.client,
-            query: this.enableTemplating ? this.templateContexts() : this.query,
+            query: this.enableTemplating ? this.templateContext() : this.query,
             variables
         })
     }

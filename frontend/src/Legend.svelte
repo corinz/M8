@@ -2,7 +2,7 @@
     import {onMount} from 'svelte';
     import {BaseQuery} from "./gqlQuery";
     import {gql} from "@urql/svelte";
-    import {activeContextStore, allContextStore} from "./activeContextStore";
+    import {addContextStore, removeContextStore} from "./activeContextStore";
 
     // Cluster is used to display legend items
     type Cluster = {
@@ -18,17 +18,15 @@
         }`
     }
 
-    const contextQuery = new ContextResourceQuery
-    let clusterQStore = contextQuery.executeQuery()
+    const contextQuery = new ContextResourceQuery(null)
+    contextQuery.executeQuery()
+    let queryStore = contextQuery.queryStore
     let clusters
-
-    let activeContextsLocal: Map<string, string> = new Map()
     let clusterArr: Cluster[] = []
 
     // execute cluster api query and set store for external use
-    $: if ($clusterQStore.data) {
-        clusters = $clusterQStore.data["contexts"]
-        allContextStore.set(clusters)
+    $: if ($queryStore.data) {
+        clusters = $queryStore.data["contexts"]
     } else {
         clusters = null
     }
@@ -56,13 +54,11 @@
 
             // update active contexts
             if (toggle) {
-                activeContextsLocal.set(name, name)
+                addContextStore.set(name)
             } else {
-                activeContextsLocal.delete(name)
+                removeContextStore.set(name)
             }
         }
-        // set activeContexts store so we can subscribe in other places
-        activeContextStore.set(activeContextsLocal)
     }
 
     // handleKeyPress toggles clusters based on numpad key presses
@@ -85,7 +81,7 @@
 <div>
     <fieldset>
         <legend>Local Contexts</legend>
-        {#if $clusterQStore.data}
+        {#if $queryStore.data}
             <div>
                 {#each clusterArr as {id, context, checked}}
                     <div>
