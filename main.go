@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"flag"
 	log "github.com/sirupsen/logrus"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"m8/internal/app"
 )
 
 //go:embed all:frontend/dist
@@ -16,9 +18,10 @@ func main() {
 	headless := flag.Bool("headless", false, "Run in backend only")
 	flag.Parse()
 
+	// Create an instance of the app structure
+	m8 := app.NewApp()
+
 	if bool(*headless) == false {
-		// Create an instance of the app structure
-		app := NewApp()
 
 		// Create application with options
 		err := wails.Run(&options.App{
@@ -29,9 +32,9 @@ func main() {
 				Assets: assets,
 			},
 			BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-			OnStartup:        app.startup,
+			OnStartup:        m8.Startup,
 			Bind: []interface{}{
-				app,
+				m8,
 			},
 		})
 
@@ -40,6 +43,7 @@ func main() {
 		}
 	} else {
 		log.Infoln("Running in headless mode")
-		headlessStartup()
+		m8.Apollo = true
+		m8.Startup(context.TODO())
 	}
 }

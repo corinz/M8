@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,6 +11,7 @@ import (
 	disc "k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
+	"m8/internal/api/graph/model"
 	"m8/internal/connect"
 	"reflect"
 	"strings"
@@ -162,7 +164,7 @@ func (c *Client) GvkFromName(name string) (schema.GroupVersionKind, error) {
 	return c.gvkMap[name], nil
 }
 
-func (c *Client) GetResources(name string, ns string) (any, error) {
+func (c *Client) GetResources(name string, ns string) ([]*model.Resource, error) {
 	if c.Active == false {
 		err := c.lazyLoad()
 		if err != nil {
@@ -177,10 +179,21 @@ func (c *Client) GetResources(name string, ns string) (any, error) {
 		log.Warnln("Bad resource name")
 	}
 	resource := c.dynamicClient.Resource(gvr)
+
+	// fetch an unstructured list of objects for the given resource and namespace
 	unstruc, _ := resource.Namespace(ns).List(context.TODO(), listOptions)
-	var unstrucList = make([]map[string]interface{}, 0)
+	unstrucList := []*model.Resource{}
+
 	for _, v := range unstruc.Items {
-		unstrucList = append(unstrucList, v.Object)
+		var resource model.Resource
+
+		// decode unstructured object into resource type
+		err = mapstructure.Decode(v.Object, &resource)
+		if err != nil {
+			log.Error(err)
+		} else {
+			unstrucList = append(unstrucList, &resource)
+		}
 	}
 
 	return unstrucList, nil
