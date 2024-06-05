@@ -55,7 +55,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Contexts  func(childComplexity int) int
-		Resources func(childComplexity int, name *string, clusterContext string, namespace string) int
+		Resources func(childComplexity int, name string, clusterContext string, namespace *string) int
 	}
 
 	Resource struct {
@@ -68,7 +68,7 @@ type ComplexityRoot struct {
 }
 
 type QueryResolver interface {
-	Resources(ctx context.Context, name *string, clusterContext string, namespace string) ([]*model.Resource, error)
+	Resources(ctx context.Context, name string, clusterContext string, namespace *string) ([]*model.Resource, error)
 	Contexts(ctx context.Context) ([]*string, error)
 }
 
@@ -136,7 +136,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Resources(childComplexity, args["name"].(*string), args["clusterContext"].(string), args["namespace"].(string)), true
+		return e.complexity.Query.Resources(childComplexity, args["name"].(string), args["clusterContext"].(string), args["namespace"].(*string)), true
 
 	case "Resource.apiVersion":
 		if e.complexity.Resource.APIVersion == nil {
@@ -299,10 +299,10 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_Query_resources_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *string
+	var arg0 string
 	if tmp, ok := rawArgs["name"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -317,10 +317,10 @@ func (ec *executionContext) field_Query_resources_args(ctx context.Context, rawA
 		}
 	}
 	args["clusterContext"] = arg1
-	var arg2 string
+	var arg2 *string
 	if tmp, ok := rawArgs["namespace"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
-		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -545,7 +545,7 @@ func (ec *executionContext) _Query_resources(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Resources(rctx, fc.Args["name"].(*string), fc.Args["clusterContext"].(string), fc.Args["namespace"].(string))
+		return ec.resolvers.Query().Resources(rctx, fc.Args["name"].(string), fc.Args["clusterContext"].(string), fc.Args["namespace"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

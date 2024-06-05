@@ -10,8 +10,12 @@ import (
 )
 
 // Resources is the resolver for the resources field.
-func (r *queryResolver) Resources(ctx context.Context, name *string, clusterContext string, namespace string) ([]*model.Resource, error) {
-	resources, err := r.Clusters[clusterContext].GetResources(*name, namespace)
+func (r *queryResolver) Resources(ctx context.Context, name string, clusterContext string, namespace *string) ([]*model.Resource, error) {
+	ns := ""
+	if namespace != nil {
+		ns = *namespace
+	}
+	resources, err := r.Clusters[clusterContext].GetResources(name, ns)
 	return resources, err
 }
 

@@ -12,7 +12,7 @@ type Resource {
 }
 
 type Query {
-    resources(name: String, clusterContext: String!, namespace: String!): [Resource]
+    resources(name: String!, clusterContext: String!, namespace: String): [Resource]
     contexts: [String]
 }
 
