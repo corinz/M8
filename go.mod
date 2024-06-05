@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/99designs/gqlgen v0.17.47
-	github.com/graphql-go/graphql v0.8.1
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/rs/cors v1.11.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/vektah/gqlparser/v2 v2.5.12
 	github.com/wailsapp/wails/v2 v2.5.1

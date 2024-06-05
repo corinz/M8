@@ -13,6 +13,7 @@ import (
 type App struct {
 	ctx      context.Context
 	Clusters map[string]*client.Client
+	Contexts []string
 	Apollo   bool
 }
 
@@ -51,6 +52,7 @@ func (a *App) Startup(ctx context.Context) {
 	}
 	path := filepath.Join(home, ".kube", "Config")
 	contextsDiscovered := GetContexts(path)
+	a.Contexts = contextsDiscovered
 
 	for _, contextDiscovered := range contextsDiscovered {
 		a.Clusters[contextDiscovered] = client.NewCluster(contextDiscovered, path)

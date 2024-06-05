@@ -11,6 +11,7 @@ import (
 
 // Resolver serves as dependency injection for our api server
 type Resolver struct {
-	resources []*model.Resource
-	Clusters  map[string]*client.Client
+	resources   []*model.Resource
+	Clusters    map[string]*client.Client
+	ContextList []string
 }

@@ -1,12 +1,12 @@
 package app
 
 import (
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/rs/cors"
 	"log"
 	"m8/internal/api/graph"
 	"net/http"
 	"os"
-
-	"github.com/99designs/gqlgen/graphql/handler"
 )
 
 const defaultPort = "8080"
@@ -36,8 +36,12 @@ func start(m8 *App) {
 	}
 
 	// GqlGen main handler
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Clusters: m8.Clusters}}))
-	http.Handle("/graphql", srv)
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
+		Clusters:    m8.Clusters,
+		ContextList: m8.Contexts,
+	}}))
+	graphqlHandlerWithCors := cors.Default().Handler(srv)
+	http.Handle("/graphql", graphqlHandlerWithCors)
 
 	// Apollo handler
 	if m8.Apollo {

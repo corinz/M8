@@ -36,3 +36,6 @@ requirements:
 	      exit 1; \
 	    fi \
 	done
+
+gen:
+	go generate ./...

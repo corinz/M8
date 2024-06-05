@@ -15,6 +15,20 @@ func (r *queryResolver) Resources(ctx context.Context, name *string, clusterCont
 	return resources, err
 }
 
+// Contexts is the resolver for the contexts field.
+func (r *queryResolver) Contexts(ctx context.Context) ([]*string, error) {
+	contexts := []*string{}
+	i := 0
+	for i < len(r.ContextList) {
+		strPtr := &r.ContextList[i]
+		if *strPtr != "" {
+			contexts = append(contexts, strPtr)
+		}
+		i++
+	}
+	return contexts, nil
+}
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
