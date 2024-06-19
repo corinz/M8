@@ -90,7 +90,8 @@
                                 id={id}
                                 aria-label={context}
                                 bind:checked={checked}
-                        />
+                                disabled />
+                        Press
                         <label for={id}>{id}: {context}</label>
                     </div>
                 {/each}
