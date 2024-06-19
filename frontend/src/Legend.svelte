@@ -13,7 +13,7 @@
 
     // ContextResourceQuery fetches a list of contexts from the api
     class ContextResourceQuery extends BaseQuery {
-        query = gql`query RootQuery {
+        query = gql`query Query {
             contexts
         }`
     }
@@ -90,7 +90,8 @@
                                 id={id}
                                 aria-label={context}
                                 bind:checked={checked}
-                        />
+                                disabled />
+                        Press
                         <label for={id}>{id}: {context}</label>
                     </div>
                 {/each}
