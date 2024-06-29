@@ -8,6 +8,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"m8/internal/api/graph/model"
 	"strconv"
 	"sync"
@@ -40,12 +41,18 @@ type Config struct {
 
 type ResolverRoot interface {
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Event struct {
+		Object func(childComplexity int) int
+		Type   func(childComplexity int) int
+	}
+
 	Metadata struct {
 		Annotations func(childComplexity int) int
 		Labels      func(childComplexity int) int
@@ -60,16 +67,24 @@ type ComplexityRoot struct {
 
 	Resource struct {
 		APIVersion func(childComplexity int) int
+		EventType  func(childComplexity int) int
 		Kind       func(childComplexity int) int
 		Metadata   func(childComplexity int) int
 		Spec       func(childComplexity int) int
 		Status     func(childComplexity int) int
+	}
+
+	Subscription struct {
+		Resources func(childComplexity int, name string, clusterContext string, namespace *string) int
 	}
 }
 
 type QueryResolver interface {
 	Resources(ctx context.Context, name string, clusterContext string, namespace *string) ([]*model.Resource, error)
 	Contexts(ctx context.Context) ([]*string, error)
+}
+type SubscriptionResolver interface {
+	Resources(ctx context.Context, name string, clusterContext string, namespace *string) (<-chan *model.Resource, error)
 }
 
 type executableSchema struct {
@@ -90,6 +105,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Event.object":
+		if e.complexity.Event.Object == nil {
+			break
+		}
+
+		return e.complexity.Event.Object(childComplexity), true
+
+	case "Event.type":
+		if e.complexity.Event.Type == nil {
+			break
+		}
+
+		return e.complexity.Event.Type(childComplexity), true
 
 	case "Metadata.annotations":
 		if e.complexity.Metadata.Annotations == nil {
@@ -145,6 +174,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Resource.APIVersion(childComplexity), true
 
+	case "Resource.eventType":
+		if e.complexity.Resource.EventType == nil {
+			break
+		}
+
+		return e.complexity.Resource.EventType(childComplexity), true
+
 	case "Resource.kind":
 		if e.complexity.Resource.Kind == nil {
 			break
@@ -172,6 +208,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Resource.Status(childComplexity), true
+
+	case "Subscription.resources":
+		if e.complexity.Subscription.Resources == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_resources_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.Resources(childComplexity, args["name"].(string), args["clusterContext"].(string), args["namespace"].(*string)), true
 
 	}
 	return 0, false
@@ -213,6 +261,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 
 			return &response
+		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
 		}
 
 	default:
@@ -329,6 +394,39 @@ func (ec *executionContext) field_Query_resources_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_Subscription_resources_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["clusterContext"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clusterContext"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["clusterContext"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["namespace"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["namespace"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -366,6 +464,102 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Event_type(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_object(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_object(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Object, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Resource)
+	fc.Result = res
+	return ec.marshalOResource2ᚖm8ᚋinternalᚋapiᚋgraphᚋmodelᚐResource(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_object(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "eventType":
+				return ec.fieldContext_Resource_eventType(ctx, field)
+			case "metadata":
+				return ec.fieldContext_Resource_metadata(ctx, field)
+			case "spec":
+				return ec.fieldContext_Resource_spec(ctx, field)
+			case "status":
+				return ec.fieldContext_Resource_status(ctx, field)
+			case "kind":
+				return ec.fieldContext_Resource_kind(ctx, field)
+			case "apiVersion":
+				return ec.fieldContext_Resource_apiVersion(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Resource", field.Name)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _Metadata_namespace(ctx context.Context, field graphql.CollectedField, obj *model.Metadata) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Metadata_namespace(ctx, field)
@@ -567,6 +761,8 @@ func (ec *executionContext) fieldContext_Query_resources(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "eventType":
+				return ec.fieldContext_Resource_eventType(ctx, field)
 			case "metadata":
 				return ec.fieldContext_Resource_metadata(ctx, field)
 			case "spec":
@@ -760,6 +956,47 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resource_eventType(ctx context.Context, field graphql.CollectedField, obj *model.Resource) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Resource_eventType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EventType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Resource_eventType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -976,6 +1213,86 @@ func (ec *executionContext) fieldContext_Resource_apiVersion(_ context.Context, 
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_resources(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_resources(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().Resources(rctx, fc.Args["name"].(string), fc.Args["clusterContext"].(string), fc.Args["namespace"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.Resource):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalOResource2ᚖm8ᚋinternalᚋapiᚋgraphᚋmodelᚐResource(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_resources(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "eventType":
+				return ec.fieldContext_Resource_eventType(ctx, field)
+			case "metadata":
+				return ec.fieldContext_Resource_metadata(ctx, field)
+			case "spec":
+				return ec.fieldContext_Resource_spec(ctx, field)
+			case "status":
+				return ec.fieldContext_Resource_status(ctx, field)
+			case "kind":
+				return ec.fieldContext_Resource_kind(ctx, field)
+			case "apiVersion":
+				return ec.fieldContext_Resource_apiVersion(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Resource", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_resources_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -2761,6 +3078,44 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context
 
 // region    **************************** object.gotpl ****************************
 
+var eventImplementors = []string{"Event"}
+
+func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, obj *model.Event) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Event")
+		case "type":
+			out.Values[i] = ec._Event_type(ctx, field, obj)
+		case "object":
+			out.Values[i] = ec._Event_object(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var metadataImplementors = []string{"Metadata"}
 
 func (ec *executionContext) _Metadata(ctx context.Context, sel ast.SelectionSet, obj *model.Metadata) graphql.Marshaler {
@@ -2902,6 +3257,8 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Resource")
+		case "eventType":
+			out.Values[i] = ec._Resource_eventType(ctx, field, obj)
 		case "metadata":
 			out.Values[i] = ec._Resource_metadata(ctx, field, obj)
 		case "spec":
@@ -2933,6 +3290,26 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 	}
 
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "resources":
+		return ec._Subscription_resources(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var __DirectiveImplementors = []string{"__Directive"}

@@ -2,8 +2,10 @@
 
 # Gqlgen predefined scalar
 scalar Map
+scalar Any
 
 type Resource {
+    eventType: String
     metadata: Metadata
     spec: Map
     status: Map
@@ -21,4 +23,8 @@ type Metadata {
     name: String
     labels: Map
     annotations: Map
+}
+
+type Subscription {
+    resources(name: String!, clusterContext: String!, namespace: String): Resource
 }

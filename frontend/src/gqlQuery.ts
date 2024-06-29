@@ -1,4 +1,11 @@
-import type {AnyVariables, Client, OperationResult, OperationResultStore, TypedDocumentNode} from "@urql/svelte";
+import {
+    type AnyVariables,
+    type Client,
+    type OperationResult,
+    type OperationResultStore,
+    subscriptionStore,
+    type TypedDocumentNode
+} from "@urql/svelte";
 import {getContextClient, gql, queryStore} from "@urql/svelte";
 import type {tableObject} from "./jsonTable";
 
@@ -12,6 +19,7 @@ export class BaseQuery {
     client: Client
     queryIssued: boolean = false
     queryStore: OperationResultStore<any, any>
+    subscriptionStore: OperationResultStore<any, any>
     enableTemplating: boolean
 
     constructor(contextName: string, debug?: boolean) {
@@ -44,6 +52,18 @@ export class BaseQuery {
             this.client = getContextClient()
         }
         this.queryStore = queryStore({
+            client: this.client,
+            query: this.enableTemplating ? this.templateContext() : this.query,
+            variables
+        })
+    }
+
+    executeSubscription(variables?: any) {
+        if (!this.client){
+            // Note: getContextClient() must be called from within a svelte component!
+            this.client = getContextClient()
+        }
+        this.subscriptionStore = subscriptionStore({
             client: this.client,
             query: this.enableTemplating ? this.templateContext() : this.query,
             variables

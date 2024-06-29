@@ -7,7 +7,7 @@ const filterOptions = {
     threshold: 0.40 // 0 = perfect match, 1 = indiscriminate
 }
 
-export const tableDataStore: Writable<Map<string, any>> = writable(new Map())
+export const tableDataStore: Writable<Map<string, Array<any>>> = writable(new Map())
 export const searchTerm: Writable<string> = writable("")
 export const filterTerm: Writable<string> = writable()
 

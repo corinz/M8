@@ -2,6 +2,11 @@
 
 package model
 
+type Event struct {
+	Type   *string   `json:"type,omitempty"`
+	Object *Resource `json:"object,omitempty"`
+}
+
 type Metadata struct {
 	Namespace   *string                `json:"namespace,omitempty"`
 	Name        *string                `json:"name,omitempty"`
@@ -13,9 +18,13 @@ type Query struct {
 }
 
 type Resource struct {
+	EventType  *string                `json:"eventType,omitempty"`
 	Metadata   *Metadata              `json:"metadata,omitempty"`
 	Spec       map[string]interface{} `json:"spec,omitempty"`
 	Status     map[string]interface{} `json:"status,omitempty"`
 	Kind       *string                `json:"kind,omitempty"`
 	APIVersion *string                `json:"apiVersion,omitempty"`
+}
+
+type Subscription struct {
 }

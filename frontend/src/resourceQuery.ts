@@ -2,8 +2,9 @@ import type {OperationResult} from "@urql/svelte";
 import type {tableObject} from "./jsonTable";
 import {BaseQuery} from "./gqlQuery";
 
-// resourceClass represent the structure of the graphql resource object
+// resourceClass represents the structure of the graphql resource object
 class resourceClass {
+    eventType: string
     apiVersion: string
     kind: string
     metadata: {
@@ -20,8 +21,9 @@ class resourceClass {
 
 export class GqlResourceQuery extends BaseQuery {
     enableTemplating = true
-    rootQueryString = `query Query($name: String!) {\n`
+    rootQueryString = `subscription Subscription($name: String!) {\n`
     bodyQueryString = `PARAM-PLACEHOLDER: resources(clusterContext: "CONTEXT-PLACEHOLDER", name: $name) {
+        eventType
         apiVersion
         kind
         metadata {
@@ -34,22 +36,20 @@ export class GqlResourceQuery extends BaseQuery {
     footerQueryString = `}`
 
     transform(resultObj: OperationResult): tableObject {
-        let obj = []
+        let obj
         Object.entries(resultObj).map(([i, v]) => { // loop over context objects
-            Object.entries(v).map(([ii, vv]) => { // loop over resource objects
-                    const r = vv as resourceClass
-                    // TODO https://basarat.gitbook.io/typescript/future-javascript/destructuring
-                    obj.push({
-                        "cluster": i,
-                        "name": r.metadata.name,
-                        "namespace": r.metadata.namespace,
-                        "kind": r.kind,
-                        "apiVersion": r.apiVersion,
-                        "labels": r.metadata.labels,
-                        "annotations": r.metadata.annotations
-                    })
-                }
-            )
+            const r = v as resourceClass
+            // TODO https://basarat.gitbook.io/typescript/future-javascript/destructuring
+            obj = {
+                "cluster": i,
+                "eventType": r.eventType,
+                "name": r.metadata.name,
+                "namespace": r.metadata.namespace,
+                "kind": r.kind,
+                "apiVersion": r.apiVersion,
+                "labels": r.metadata.labels,
+                "annotations": r.metadata.annotations
+            }
         })
         return obj
     }

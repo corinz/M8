@@ -32,14 +32,14 @@ export async function execActiveContexts(activeContextMap, queryVars, execAll) {
     if (execAll) {
         activeContextMap.forEach((queryObject, contextName) => {
             if (contextName != "" && contextName != null) {
-                queryObject.executeQuery(queryVars)
+                queryObject.executeSubscription(queryVars)
                 fetchContextData(queryObject)
             }
         })
     } else {
         activeContextMap.forEach((queryObject, contextName) => {
             if (!queryObject.queryIssued && contextName != "" && contextName != null) {
-                queryObject.executeQuery(queryVars)
+                queryObject.executeSubscription(queryVars)
                 fetchContextData(queryObject)
             }
         })
@@ -50,36 +50,51 @@ export async function execActiveContexts(activeContextMap, queryVars, execAll) {
 async function fetchContextData(queryObject) {
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
     let retries = 0
-    let queryStore = queryObject.queryStore
+    let store = queryObject.queryStore ?? queryObject.subscriptionStore
     let fetching, error, data
-    queryStore.subscribe(store => {
-        fetching = store.fetching
-        error = store.error
-        data = store.data
-    })
-
-    while (retries < 40) {
-        if (fetching) {
-            console.log("INFO: GraphQL Query Store fetching: ", queryObject.contextName)
-        } else if (error) {
+    store.subscribe(store => {
+        // fetching = store.fetching
+        if (store.error) {
             console.log("ERROR: GraphQL Query Store: ", queryObject.contextName)
             throw new Error(error)
-        } else if (data) {
+        }
+        else if (store.data) {
             // update tableDataStore with fetched data
             tableDataStore.update(m => {
-                m.set(queryObject.contextName, queryObject.transform(data))
+                // cluster context exists in map, append object to array
+                if (m.has(queryObject.contextName)) {
+                    m.get(queryObject.contextName).push(queryObject.transform(store.data))
+                } else { // map entry dne
+                    let arr = []
+                    m.set(queryObject.contextName, arr)
+                    m.get(queryObject.contextName).push(queryObject.transform(store.data))
+                }
                 return m
             })
             queryObject.queryIssued = true
-            return
         }
-        if (retries >= 39) {
-            console.log("INFO: GraphQL Query Store retries exhausted: ", queryObject.contextName)
-            return
-        }
-        retries++
-        await delay(250)
-    }
+    })
+
+    // while (retries < 40) {
+    //     if (error) {
+    //         console.log("ERROR: GraphQL Query Store: ", queryObject.contextName)
+    //         throw new Error(error)
+    //     } else if (data) {
+    //         // update tableDataStore with fetched data
+    //         tableDataStore.update(m => {
+    //             m.set(queryObject.contextName, queryObject.transform(data))
+    //             return m
+    //         })
+    //         queryObject.queryIssued = true
+    //         return
+    //     }
+    //     if (retries >= 39) {
+    //         console.log("INFO: GraphQL Query Store retries exhausted: ", queryObject.contextName)
+    //         return
+    //     }
+    //     retries++
+    //     await delay(250)
+    // }
 }
 
 // removeContextStore manages the state of activeContextStore
