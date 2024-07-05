@@ -23,6 +23,8 @@ type Metadata {
     name: String
     labels: Map
     annotations: Map
+    uid: String
+    creationTimestamp: String
 }
 
 type Subscription {

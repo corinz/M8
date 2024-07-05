@@ -10,3 +10,20 @@ export function flattenResourceObj(data) {
     })
     return obj
 }
+
+export function transform(obj) {
+    return {
+        // "cluster": id,
+        "uid": obj.metadata.uid,
+        "eventType": obj.eventType,
+        "name": obj.metadata.name,
+        "namespace": obj.metadata.namespace,
+        "kind": obj.kind,
+        "apiVersion": obj.apiVersion,
+        "labels": obj.metadata.labels,
+        "annotations": obj.metadata.annotations
+    }
+}
+
+import {writable} from "svelte/store";
+export const rowCount = writable(0);

@@ -1,9 +1,14 @@
 <script lang="ts">
     import {searchTerm, filterTerm, tableDataStore, filter} from "./jsonTable"
+    import ContextData from "./ContextData.svelte";
+    import {activeContextStore} from "./activeContextStore";
+    import {transform} from "./utils"
+    import {rowCount} from "./utils";
 
-    let activeRowIndex = 0, filteredData, displayedData
-    $: data = Array.from($tableDataStore.values()).flatMap(arr => arr)
-    $: displayedData = filteredData ? filteredData : data
+    let activeRowIndex = 0, filteredData, randomStore
+    let stores = []
+    $: stores = Array.from($activeContextStore.values()).length > 0 ? Array.from($activeContextStore.values()) : []
+    $: randomStore = stores.length > 0 ? stores[0].subscriptionStore : null
 
     function handleKeyDown(event: CustomEvent | KeyboardEvent) {
         let element = document.getElementById('highlight')
@@ -14,12 +19,12 @@
         if (event.key === 'ArrowUp' || event.key === 'Up') {
             activeRowIndex = Math.max(0, activeRowIndex - 1);
         } else if (event.key === 'ArrowDown' || event.key === 'Down') {
-            activeRowIndex = Math.min(data.length - 1, activeRowIndex + 1);
+            activeRowIndex = Math.min($rowCount - 1, activeRowIndex + 1);
         }
     }
 
-    filterTerm.subscribe( term => {
-        if (term == "" || term == null){
+    filterTerm.subscribe(term => {
+        if (term == "" || term == null) {
             filteredData = null
             return
         }
@@ -29,44 +34,31 @@
     window.addEventListener("keydown", function (e) {
         handleKeyDown(e)
     });
-
 </script>
 
-{#if (!displayedData)}
-    Dataset does not exist
-{:else if displayedData.length === 0}
-    Dataset is empty
-{:else if displayedData.length > 0}
+{#if randomStore && $randomStore.data && stores.length > 0}
+    {@const [[_, obj]] = Object.entries($randomStore.data)}
+
     <fieldset>
-        <legend>{$searchTerm.charAt(0).toUpperCase() + $searchTerm.slice(1) + "s" + "(" + displayedData.length + ")"} </legend>
+        <legend>{$searchTerm.charAt(0).toUpperCase() + $searchTerm.slice(1) + "s" + "(" + $rowCount + ")"} </legend>
         <div class="scrollable-content">
             <table>
-                <!-- HEADER ROW -->
                 <thead>
                 <tr>
-                    {#each Object.keys(displayedData[0]) as header}
-                            <th columnId={header}>
-                                {header}
-                            </th>
+                    <th>Context</th>
+                    {#each Object.keys(transform(obj)) as key}
+                        <th>
+                            {key}
+                        </th>
                     {/each}
                 </tr>
                 </thead>
-                <!-- DATA ROWS -->
+
                 <tbody>
-                {#each Object.entries(displayedData) as [id, obj] }
-                    {#if id == activeRowIndex}
-                        <tr id="highlight">
-                            {#each Object.values(obj) as val }
-                                <td class="highlight">{val}</td>
-                            {/each}
-                        </tr>
-                    {:else }
-                        <tr>
-                            {#each Object.values(obj) as val }
-                                <td>{val}</td>
-                            {/each}
-                        </tr>
-                    {/if}
+                {#each stores as store}
+                    <ContextData store={store.subscriptionStore}>
+                        <td slot="cluster-context">{store.contextName}</td>
+                    </ContextData>
                 {/each}
                 </tbody>
             </table>

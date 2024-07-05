@@ -2,16 +2,13 @@
 
 package model
 
-type Event struct {
-	Type   *string   `json:"type,omitempty"`
-	Object *Resource `json:"object,omitempty"`
-}
-
 type Metadata struct {
-	Namespace   *string                `json:"namespace,omitempty"`
-	Name        *string                `json:"name,omitempty"`
-	Labels      map[string]interface{} `json:"labels,omitempty"`
-	Annotations map[string]interface{} `json:"annotations,omitempty"`
+	Namespace         *string                `json:"namespace,omitempty"`
+	Name              *string                `json:"name,omitempty"`
+	Labels            map[string]interface{} `json:"labels,omitempty"`
+	Annotations       map[string]interface{} `json:"annotations,omitempty"`
+	UID               *string                `json:"uid,omitempty"`
+	CreationTimestamp *string                `json:"creationTimestamp,omitempty"`
 }
 
 type Query struct {

@@ -8,6 +8,7 @@ import {
 } from "@urql/svelte";
 import {getContextClient, gql, queryStore} from "@urql/svelte";
 import type {tableObject} from "./jsonTable";
+import {resourceClass} from "./resourceQuery";
 
 // BaseQuery implements BaseQueryInterface
 export class BaseQuery {
@@ -16,8 +17,10 @@ export class BaseQuery {
     readonly bodyQueryString: string
     readonly footerQueryString: string
     readonly contextName: string
+    data: any
+    transformedData: any
     client: Client
-    queryIssued: boolean = false
+    querySuccess: boolean = false
     queryStore: OperationResultStore<any, any>
     subscriptionStore: OperationResultStore<any, any>
     enableTemplating: boolean
@@ -56,6 +59,8 @@ export class BaseQuery {
             query: this.enableTemplating ? this.templateContext() : this.query,
             variables
         })
+        this.data = this.queryStore.subscribe( store => store.data)
+        this.transform()
     }
 
     executeSubscription(variables?: any) {
@@ -68,9 +73,34 @@ export class BaseQuery {
             query: this.enableTemplating ? this.templateContext() : this.query,
             variables
         })
+        this.data = this.subscriptionStore.subscribe( store => store.data)
+        this.transform()
+
     }
 
-    transform(resultObj: OperationResult): tableObject {
-        return {}
+    transform() {
+        let obj
+        // TODO is this necessary?
+        Object.entries(this.data).map(([i, v]) => { // loop over context objects
+            const r = v as resourceClass
+            // TODO https://basarat.gitbook.io/typescript/future-javascript/destructuring
+            obj = {
+                "cluster": i,
+                "uid": r.metadata.uid,
+                "eventType": r.eventType,
+                "name": r.metadata.name,
+                "namespace": r.metadata.namespace,
+                "kind": r.kind,
+                "apiVersion": r.apiVersion,
+                "labels": r.metadata.labels,
+                "annotations": r.metadata.annotations
+            }
+        })
+
+        this.transformedData = obj
+    }
+
+    async fetchDataFromStore(){
+        this.data = {}
     }
 }
