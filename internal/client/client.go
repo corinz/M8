@@ -2,12 +2,14 @@ package client
 
 import (
 	"context"
+	"errors"
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/apimachinery/pkg/watch"
 	disc "k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -197,4 +199,28 @@ func (c *Client) GetResources(name string, ns string) ([]*model.Resource, error)
 	}
 
 	return unstrucList, nil
+}
+
+func (c *Client) Watch(name string, ns string) (watch.Interface, error) {
+	if c.Active == false {
+		err := c.lazyLoad()
+		if err != nil {
+			log.Errorln("unable to lazy load the cluster client", err)
+		}
+	}
+	listOptions := metav1.ListOptions{}
+	name = strings.ToLower(name)
+
+	gvr, err := c.GvrFromName(name)
+	if err != nil {
+		log.Warnln("Bad resource name")
+	}
+	resource := c.dynamicClient.Resource(gvr)
+
+	watcher, err := resource.Namespace(ns).Watch(context.TODO(), listOptions)
+	if watcher == nil {
+		return nil, errors.New("nil watcher")
+	}
+	watcher.ResultChan()
+	return watcher, err
 }

@@ -7,6 +7,10 @@ package graph
 import (
 	"context"
 	"m8/internal/api/graph/model"
+
+	"github.com/mitchellh/mapstructure"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 // Resources is the resolver for the resources field.
@@ -33,7 +37,48 @@ func (r *queryResolver) Contexts(ctx context.Context) ([]*string, error) {
 	return contexts, nil
 }
 
+// Resources is the resolver for the resources field.
+func (r *subscriptionResolver) Resources(ctx context.Context, name string, clusterContext string, namespace *string) (<-chan *model.Resource, error) {
+	ns := ""
+	if namespace != nil {
+		ns = *namespace
+	}
+	watcher, err := r.Clusters[clusterContext].Watch(name, ns)
+	if err != nil {
+		// TODO
+	}
+
+	eventChannel := make(chan *model.Resource)
+
+	// destructures events and adds objects to the eventChannel that is used in the graphql subscription
+	go func(w watch.Interface, eventChannel chan<- *model.Resource) {
+		watchChannel := w.ResultChan()
+		for {
+			select {
+			case event := <-watchChannel:
+				if event.Object != nil {
+					// TODO: when searching for node .. panic: interface conversion: runtime.Object is *v1.Status, not *unstructured.Unstructured
+					object := event.Object.(*unstructured.Unstructured).Object
+
+					var resource model.Resource
+					// decode unstructured object into resource type
+					err = mapstructure.Decode(object, &resource)
+					tp := string(event.Type)
+					resource.EventType = &tp
+					eventChannel <- &resource
+				}
+			}
+		}
+	}(watcher, eventChannel)
+
+	return eventChannel, nil
+}
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }

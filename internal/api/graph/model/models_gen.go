@@ -3,19 +3,25 @@
 package model
 
 type Metadata struct {
-	Namespace   *string                `json:"namespace,omitempty"`
-	Name        *string                `json:"name,omitempty"`
-	Labels      map[string]interface{} `json:"labels,omitempty"`
-	Annotations map[string]interface{} `json:"annotations,omitempty"`
+	Namespace         *string                `json:"namespace,omitempty"`
+	Name              *string                `json:"name,omitempty"`
+	Labels            map[string]interface{} `json:"labels,omitempty"`
+	Annotations       map[string]interface{} `json:"annotations,omitempty"`
+	UID               *string                `json:"uid,omitempty"`
+	CreationTimestamp *string                `json:"creationTimestamp,omitempty"`
 }
 
 type Query struct {
 }
 
 type Resource struct {
+	EventType  *string                `json:"eventType,omitempty"`
 	Metadata   *Metadata              `json:"metadata,omitempty"`
 	Spec       map[string]interface{} `json:"spec,omitempty"`
 	Status     map[string]interface{} `json:"status,omitempty"`
 	Kind       *string                `json:"kind,omitempty"`
 	APIVersion *string                `json:"apiVersion,omitempty"`
+}
+
+type Subscription struct {
 }

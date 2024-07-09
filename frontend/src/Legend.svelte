@@ -54,8 +54,10 @@
 
             // update active contexts
             if (toggle) {
+                console.log("INFO: adding context store:", name)
                 addContextStore.set(name)
             } else {
+                console.log("INFO: removing context store: ", name)
                 removeContextStore.set(name)
             }
         }
